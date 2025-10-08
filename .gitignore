@@ -4,4 +4,4 @@ export/
 
 .env
 
-src/db.sqlite3
+db.sqlite3
