@@ -46,7 +46,7 @@ class DamageProfile(models.Model):
         ]
 
 
-class Weapon(models.Model):
+class BasicAttack(models.Model):
     class Range(models.TextChoices):
         MELEE = "MELEE", "melee"
         VERY_CLOSE = "VCLOSE", "very close"
@@ -61,17 +61,17 @@ class Weapon(models.Model):
         choices=Range.choices,
         default=Range.MELEE
     )
-    weapon_damage = models.ForeignKey(
+    damage = models.ForeignKey(
         to=DamageProfile,
         on_delete=models.PROTECT,
-        related_name="weapons"
+        related_name="basic_attack"
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                name="weapon_entity",
-                fields=("name", "range", "weapon_damage"),
+                name="basic_attack_entity",
+                fields=("name", "range", "damage"),
             )
         ]
 
@@ -102,6 +102,10 @@ class Feature(models.Model):
 
 
 class Adversary(models.Model):
+    """Temporary notes, to avoid IntegrityError that may appear when
+    creating an adversary using entities (exp, feature, basic_attack)
+    that already exist, use 'get_or_create' or a try/except in the
+    service layer to fetch existing entities before adding new rows."""
     class Type(models.TextChoices):
         BRUISER = "BRU", "bruiser"
         HORDE = "HOR", "horde"
@@ -142,7 +146,7 @@ class Adversary(models.Model):
     stress_point = models.PositiveSmallIntegerField(blank=True, null=True)
 
     atk_bonus = models.SmallIntegerField(blank=True, null=True)
-    weapon = models.ForeignKey(to=Weapon, on_delete=models.PROTECT)
+    basic_attack = models.ForeignKey(to=BasicAttack, on_delete=models.PROTECT)
     experiences = models.ManyToManyField(Experience, blank=True)
     features = models.ManyToManyField(Feature, blank=True)
 
