@@ -34,7 +34,7 @@ class DamageProfile(models.Model):
         constraints = [
             models.CheckConstraint(
                 name="dp_valid_shape",
-                check=(
+                condition=(
                     (Q(dice_number=0) & Q(dice_type=0) & Q(bonus__gte=0)) |
                     (Q(dice_number__gte=1) & Q(dice_type__gte=2))
                 ),
