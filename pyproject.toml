@@ -11,8 +11,10 @@ dependencies = [
 dev = [
     "pytest>=8.4.2",
     "pytest-django>=4.11.1",
+    "ruff>=0.14.0",
 ]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "dh_toolbox.settings"
 pythonpath = "src"
+testpaths = "tests"
