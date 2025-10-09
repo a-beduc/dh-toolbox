@@ -179,6 +179,7 @@ def test_feature_type_choices_validation():
         bad.full_clean()
 
 
+# --- ADVERSARY TESTS --- #
 @pytest.mark.django_db
 def test_adversary_defaults_and_relations(basic_attack):
     adv = Adversary.objects.create(name="Burrower", basic_attack=basic_attack)
