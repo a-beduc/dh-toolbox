@@ -4,5 +4,5 @@ from django.db import models
 # Create your models here.
 
 
-class CustomUser(AbstractUser):
+class Account(AbstractUser):
     pass
