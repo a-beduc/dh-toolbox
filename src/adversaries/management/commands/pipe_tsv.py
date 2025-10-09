@@ -27,4 +27,7 @@ class Command(BaseCommand):
             if options["script_filepath"] \
             else self.default_scriptpath
         mod = import_script_from_path(scriptpath)
-        print(mod.parse_tsv(filepath))
+        for adv in mod.parse_tsv(filepath):
+            for key, value in adv.items():
+                print(f"{key}: {value}")
+            print("***")

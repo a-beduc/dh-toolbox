@@ -4,16 +4,16 @@ import re
 
 def safe_split_threshold(value):
     if value == "None":
-        return 0, 0
+        return None, None
     parts = value.split("/")
     major = int(parts[0])
-    severe = int(parts[1]) if len(parts) > 1 and parts[1] != 'None' else 0
+    severe = int(parts[1]) if len(parts) > 1 and parts[1] != 'None' else None
     return major, severe
 
 
 def clean_damage_input(damage_input):
     damage, damage_type = damage_input.split(" ")
-    damage_type = "BTH" if "phy/mag" in damage_type else damage_type.upper()
+    damage_type = "BTH" if "phy/mag" in damage_type else damage_type
 
     if "d" not in damage:
         dice_number = 0
@@ -47,24 +47,37 @@ def clean_experience_input(experience_input):
     output = []
     for experience in experiences:
         name, value = experience.split(" +")
-        output.append({"name": name.lower(), "bonus": int(value)})
+        output.append({"name": name, "bonus": int(value)})
     return output
 
 
 def clean_feature_input(feature_input):
-    pattern = re.compile(
-        r"([\w\s]+(?:\s\(\d+\))?)\s*-\s*(Passive|Action|Reaction):"
-        r"\s*(.*?)(?=(?:[\w\s]+(?:\s\(\d+\))?\s*-\s*"
-        r"(?:Passive|Action|Reaction):)|\Z)", re.S)
-    matches = pattern.findall(feature_input)
+    chunks = re.split(r'\s{2,}', feature_input.strip())
 
-    return [
-        {
-            "name": name.lower(),
-            "type": feat_type.upper(),
+    header_pattern = re.compile(r'(.+)\s*-\s*(Passive|Action|Reaction):', re.I)
+    header_indexes = []
+    for idx, chunk in enumerate(chunks):
+        if header_pattern.match(chunk.strip()):
+            header_indexes.append(idx)
+
+    out = []
+    for i, header_idx in enumerate(header_indexes):
+        header = chunks[header_idx].strip()
+        name, ftype = header_pattern.match(header).groups()
+        name = name.strip()
+        ftype = ftype.strip()
+
+        start = header_idx + 1
+        end = header_indexes[i + 1] if i + 1 < len(header_indexes) \
+            else len(chunks)
+        desc = " ".join(chunks[start:end]).strip()
+
+        out.append({
+            "name": name,
+            "type": ftype,
             "description": desc
-        } for name, feat_type, desc in matches
-    ]
+        })
+    return out
 
 
 def parse_tsv(filepath):
@@ -75,9 +88,9 @@ def parse_tsv(filepath):
         for row in rows:
             major, severe = safe_split_threshold(row[7])
             data = {
-                "name": row[0].lower(),
+                "name": row[0],
                 "tier": int(row[1].split()[-1]),
-                "type": row[2].lower(),
+                "type": row[2],
                 "horde_hit_point": row[3].split("/")[0] or None,
                 "description": row[4],
                 "tactics": row[5],
@@ -88,11 +101,12 @@ def parse_tsv(filepath):
                 "stress_point": int(row[9]),
                 "atk_bonus": int(row[10].replace("+", "")),
                 "basic_attack": {
-                    "name": row[11].lower(),
-                    "range": row[12].lower(),
+                    "name": row[11],
+                    "range": row[12],
                     "damage": clean_damage_input(row[13])
                 },
-                "experience": clean_experience_input(row[14]) if row[14] else [],
+                "experience": clean_experience_input(row[14]) if row[14] \
+                    else [],
                 "feature": clean_feature_input(row[15])
             }
             output.append(data)
