@@ -170,7 +170,7 @@ def test_experience_negative_bonus():
 # TODO: These tests needs to be reworked when feature model is expanded
 @pytest.mark.django_db
 def test_feature_type_choices_validation():
-    f = Feature.objects.create(name="Relenteless", type=Feature.Type.PASSIVE)
+    f = Feature.objects.create(name="Relentless", type=Feature.Type.PASSIVE)
     f.full_clean()
     f.save()
 

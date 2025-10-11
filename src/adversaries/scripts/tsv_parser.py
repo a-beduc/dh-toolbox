@@ -13,7 +13,7 @@ def safe_split_threshold(value):
 
 def clean_damage_input(damage_input):
     damage, damage_type = damage_input.split(" ")
-    damage_type = "BTH" if "phy/mag" in damage_type else damage_type
+    damage_type = "BTH" if "phy/mag" in damage_type else damage_type.upper()
 
     if "d" not in damage:
         dice_number = 0
@@ -38,7 +38,7 @@ def clean_damage_input(damage_input):
         "dice_number": dice_number,
         "dice_type": dice_type,
         "bonus": bonus,
-        "damage_type": damage_type
+        "damage_type": damage_type.strip()
     }
 
 
@@ -47,7 +47,7 @@ def clean_experience_input(experience_input):
     output = []
     for experience in experiences:
         name, value = experience.split(" +")
-        output.append({"name": name, "bonus": int(value)})
+        output.append({"name": name.strip(), "bonus": int(value)})
     return output
 
 
@@ -65,7 +65,7 @@ def clean_feature_input(feature_input):
         header = chunks[header_idx].strip()
         name, ftype = header_pattern.match(header).groups()
         name = name.strip()
-        ftype = ftype.strip()
+        ftype = ftype.strip().upper()[:3]
 
         start = header_idx + 1
         end = header_indexes[i + 1] if i + 1 < len(header_indexes) \
@@ -90,10 +90,10 @@ def parse_tsv(filepath):
             data = {
                 "name": row[0],
                 "tier": int(row[1].split()[-1]),
-                "type": row[2],
+                "type": row[2].upper().strip()[:3],
                 "horde_hit_point": row[3].split("/")[0] or None,
                 "description": row[4],
-                "tactics": row[5],
+                "tactics": row[5].lower().split(","),
                 "difficulty": int(row[6]),
                 "threshold_major": major,
                 "threshold_severe": severe,
@@ -102,12 +102,12 @@ def parse_tsv(filepath):
                 "atk_bonus": int(row[10].replace("+", "")),
                 "basic_attack": {
                     "name": row[11],
-                    "range": row[12],
+                    "range": row[12].lower().strip(),
                     "damage": clean_damage_input(row[13])
                 },
-                "experience": clean_experience_input(row[14]) if row[14] \
-                    else [],
-                "feature": clean_feature_input(row[15])
+                "experiences": clean_experience_input(row[14]) if row[14]
+                else [],
+                "features": clean_feature_input(row[15])
             }
             output.append(data)
         return output

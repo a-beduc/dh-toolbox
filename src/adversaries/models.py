@@ -2,6 +2,8 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
 
+from accounts.models import Account
+
 
 class Tactic(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -53,7 +55,6 @@ class BasicAttack(models.Model):
         CLOSE = "CLOSE", "close"
         FAR = "FAR", "far"
         VERY_FAR = "VFAR", "very far"
-        OUT_OF_RANGE = "OOR", "out of range"
 
     name = models.CharField(max_length=100)
     range = models.CharField(
@@ -146,9 +147,16 @@ class Adversary(models.Model):
     stress_point = models.PositiveSmallIntegerField(blank=True, null=True)
 
     atk_bonus = models.SmallIntegerField(blank=True, null=True)
-    basic_attack = models.ForeignKey(to=BasicAttack, on_delete=models.PROTECT)
+    basic_attack = models.ForeignKey(to=BasicAttack, on_delete=models.PROTECT,
+                                     blank=True, null=True)
     experiences = models.ManyToManyField(Experience, blank=True)
     features = models.ManyToManyField(Feature, blank=True)
+
+    author = models.ForeignKey(to=Account, on_delete=models.PROTECT,
+                               blank=True, null=True)
+    source = models.CharField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [
