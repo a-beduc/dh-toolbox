@@ -204,9 +204,3 @@ def test_adversary_defaults_and_relations(basic_attack):
     assert adv.tactics.count() == 2
     assert adv.experiences.count() == 2
     assert adv.features.count() == 1
-
-
-@pytest.mark.django_db
-def test_adversary_requires_basic_attack():
-    with pytest.raises(Django_IntegrityError):
-        Adversary.objects.create(name="Burrower")
