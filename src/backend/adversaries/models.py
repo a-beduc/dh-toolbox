@@ -51,14 +51,14 @@ class DamageProfile(models.Model):
 class BasicAttack(models.Model):
     class Range(models.TextChoices):
         MELEE = "MELEE", "melee"
-        VERY_CLOSE = "VCLOSE", "very close"
+        VERY_CLOSE = "VERY_CLOSE", "very_close"
         CLOSE = "CLOSE", "close"
         FAR = "FAR", "far"
-        VERY_FAR = "VFAR", "very far"
+        VERY_FAR = "VERY_FAR", "very_far"
 
     name = models.CharField(max_length=100)
     range = models.CharField(
-        max_length=6,
+        max_length=12,
         choices=Range.choices,
         default=Range.MELEE
     )
