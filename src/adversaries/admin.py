@@ -10,7 +10,7 @@ class AdversaryAdmin(admin.ModelAdmin):
 
 
 @admin.register(BasicAttack)
-class BasicAttack(admin.ModelAdmin):
+class BasicAttackAdmin(admin.ModelAdmin):
     pass
 
 

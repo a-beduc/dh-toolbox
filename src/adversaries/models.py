@@ -102,6 +102,10 @@ class Feature(models.Model):
     # finish later the decomposition of features
 
 
+class AdversaryTag(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+
 class Adversary(models.Model):
     """Temporary notes, to avoid IntegrityError that may appear when
     creating an adversary using entities (exp, feature, basic_attack)
@@ -125,7 +129,11 @@ class Adversary(models.Model):
         THREE = 3, "III"
         FOUR = 4, "IV"
 
-    name = models.CharField(max_length=120)
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "draft"
+        PUBLISHED = "PUBLISHED", "published"
+
+    name = models.CharField(max_length=120, blank=False)
     tier = models.PositiveSmallIntegerField(
         choices=Tier.choices,
         default=Tier.ONE
@@ -152,14 +160,38 @@ class Adversary(models.Model):
     experiences = models.ManyToManyField(Experience, blank=True)
     features = models.ManyToManyField(Feature, blank=True)
 
-    author = models.ForeignKey(to=Account, on_delete=models.PROTECT,
-                               blank=True, null=True)
-    source = models.CharField(max_length=200)
+    # metadata
+    author = models.ForeignKey(to=Account, on_delete=models.PROTECT)
+    source = models.CharField(max_length=200, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    status = models.CharField(max_length=10, choices=Status.choices,
+                              default=Status.DRAFT, db_index=True)
+    tags = models.ManyToManyField(AdversaryTag, blank=True)
+
     class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("author", "name"),
+                name="unique_author_name",
+            ),
+            models.CheckConstraint(
+                name="adversary_name_not_empty",
+                condition=~Q(name="")
+            )
+        ]
         indexes = [
             models.Index(fields=["name"]),
-            models.Index(fields=["type", "tier"])
+            models.Index(fields=["type", "tier"]),
+            models.Index(fields=["status"])
         ]
+
+    def publish(self):
+        self.status = self.Status.PUBLISHED
+        self.save(update_fields=["status", "updated_at"])
+
+    def unpublish(self):
+        self.status = self.Status.DRAFT
+        self.save(update_fields=["status", "updated_at"])
+        
