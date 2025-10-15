@@ -10,9 +10,9 @@ class Tactic(models.Model):
 
 
 class DamageType(models.TextChoices):
-    PHYSICAL = "PHY", "Physical"
-    MAGICAL = "MAG", "Magical"
-    BOTH = "BTH", "Both"
+    PHYSICAL = "PHY", "PHYSICAL"
+    MAGICAL = "MAG", "MAGICAL"
+    BOTH = "BTH", "BOTH"
 
 
 class DamageProfile(models.Model):
@@ -50,15 +50,15 @@ class DamageProfile(models.Model):
 
 class BasicAttack(models.Model):
     class Range(models.TextChoices):
-        MELEE = "MELEE", "melee"
-        VERY_CLOSE = "VERY_CLOSE", "very_close"
-        CLOSE = "CLOSE", "close"
-        FAR = "FAR", "far"
-        VERY_FAR = "VERY_FAR", "very_far"
+        MELEE = "MEL", "MELEE"
+        VERY_CLOSE = "VCL", "VERY CLOSE"
+        CLOSE = "CLO", "CLOSE"
+        FAR = "FAR"
+        VERY_FAR = "VFA", "VERY FAR"
 
     name = models.CharField(max_length=100)
     range = models.CharField(
-        max_length=12,
+        max_length=3,
         choices=Range.choices,
         default=Range.MELEE
     )
@@ -92,9 +92,9 @@ class Experience(models.Model):
 
 class Feature(models.Model):
     class Type(models.TextChoices):
-        PASSIVE = "PAS", "passive"
-        ACTION = "ACT", "action"
-        REACTION = "REA", "reaction"
+        PASSIVE = "PAS", "PASSIVE"
+        ACTION = "ACT", "ACTION"
+        REACTION = "REA", "REACTION"
 
     name = models.CharField(max_length=100)
     type = models.CharField(max_length=3, choices=Type.choices)
@@ -112,16 +112,16 @@ class Adversary(models.Model):
     that already exist, use 'get_or_create' or a try/except in the
     service layer to fetch existing entities before adding new rows."""
     class Type(models.TextChoices):
-        BRUISER = "BRU", "bruiser"
-        HORDE = "HOR", "horde"
-        LEADER = "LEA", "leader"
-        MINION = "MIN", "minion"
-        RANGED = "RAN", "ranged"
-        SKULK = "SKU", "skulk"
-        SOCIAL = "SOC", "social"
-        SOLO = "SOL", "solo"
-        STANDARD = "STA", "standard"
-        SUPPORT = "SUP", "support"
+        BRUISER = "BRU", "BRUISER"
+        HORDE = "HOR", "HORDE"
+        LEADER = "LEA", "LEADER"
+        MINION = "MIN", "MINION"
+        RANGED = "RAN", "RANGED"
+        SKULK = "SKU", "SKULK"
+        SOCIAL = "SOC", "SOCIAL"
+        SOLO = "SOL", "SOLO"
+        STANDARD = "STA", "STANDARD"
+        SUPPORT = "SUP", "SUPPORT"
 
     class Tier(models.IntegerChoices):
         ONE = 1, "I"
@@ -130,8 +130,8 @@ class Adversary(models.Model):
         FOUR = 4, "IV"
 
     class Status(models.TextChoices):
-        DRAFT = "DRAFT", "draft"
-        PUBLISHED = "PUBLISHED", "published"
+        DRAFT = "DRA", "DRAFT"
+        PUBLISHED = "PUB", "PUBLISHED"
 
     name = models.CharField(max_length=120, blank=False)
     tier = models.PositiveSmallIntegerField(
@@ -166,7 +166,7 @@ class Adversary(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    status = models.CharField(max_length=10, choices=Status.choices,
+    status = models.CharField(max_length=3, choices=Status.choices,
                               default=Status.DRAFT, db_index=True)
     tags = models.ManyToManyField(AdversaryTag, blank=True)
 
