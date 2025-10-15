@@ -127,10 +127,12 @@ def test_basic_attack_unique_entity(conf_flat_dp):
 @pytest.mark.django_db
 def test_basic_attack_default_values(conf_flat_dp, conf_roll_dp):
     flat = BasicAttack.objects.create(name="Flat", damage=conf_flat_dp)
-    roll = BasicAttack.objects.create(name="Roll", damage=conf_roll_dp)
+    roll = BasicAttack.objects.create(name="Roll",
+                                      damage=conf_roll_dp,
+                                      range="VFA")
 
-    assert flat.range == "MELEE"
-    assert roll.range == "MELEE"
+    assert flat.range == BasicAttack.Range.MELEE
+    assert roll.range == BasicAttack.Range.VERY_FAR
 
 
 @pytest.mark.django_db
