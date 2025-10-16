@@ -1,6 +1,6 @@
 from django.db import transaction
 
-from adversaries.models import Adversary, Tactic, AdversaryTag, Experience, \
+from adversaries.models import Adversary, Tactic, Tag, Experience, \
     Feature, DamageProfile, BasicAttack
 
 
@@ -52,7 +52,7 @@ def create_adversary(dto):
         obj, _ = Tactic.objects.get_or_create(name=t.name)
         adv.tactics.add(obj)
     for tg in dto.tags:
-        obj, _ = AdversaryTag.objects.get_or_create(name=tg.name)
+        obj, _ = Tag.objects.get_or_create(name=tg.name)
         adv.tags.add(obj)
     for exp in dto.experiences:
         e, _ = Experience.objects.get_or_create(name=exp.name, bonus=exp.bonus)

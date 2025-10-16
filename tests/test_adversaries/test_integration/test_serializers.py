@@ -5,7 +5,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIRequestFactory
 
 from adversaries.models import Adversary
-from adversaries.serializers import AdversaryInSerializer
+from adversaries.serializers.write import AdversaryInSerializer
 
 
 @pytest.mark.django_db

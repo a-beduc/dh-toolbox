@@ -4,7 +4,7 @@ from django.db import IntegrityError
 from adversaries.dto import AdversaryDTO, BasicAttackDTO, DamageDTO, \
     TacticDTO, AdversaryTagDTO, ExperienceDTO, FeatureDTO
 from adversaries.models import Adversary, DamageProfile, BasicAttack, Tactic, \
-    AdversaryTag, Experience, Feature, DamageType
+    Tag, Experience, Feature, DamageType
 from adversaries.services import create_adversary
 
 
@@ -55,7 +55,7 @@ def test_create_adversary_with_nested_and_m2m(conf_account):
     assert DamageProfile.objects.count() == 1
     assert BasicAttack.objects.count() == 1
     assert Tactic.objects.count() == 2
-    assert AdversaryTag.objects.count() == 2
+    assert Tag.objects.count() == 2
     assert Experience.objects.count() == 2
     assert Feature.objects.count() == 1
 
