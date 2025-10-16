@@ -1,10 +1,19 @@
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.response import Response
+from rest_framework.viewsets import ReadOnlyModelViewSet, GenericViewSet
+
+from adversaries.models import Experience
+from adversaries.serializers.read import ExperienceOutSerializer
 
 
-class AdversaryViewSet(ModelViewSet):
-    permission_classes = [IsAuthenticated]
+class ExperienceViewSet(GenericViewSet):
+    queryset = Experience.objects.all()
+    serializer_class = ExperienceOutSerializer
 
-
+    def list(self, request, *args, **kwargs):
+        names = (
+            Experience.objects
+            .values_list("name", flat=True)
+            .order_by("name")
+            .distinct()
+        )
+        return Response([{"name": n} for n in names])
