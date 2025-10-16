@@ -102,7 +102,7 @@ class Feature(models.Model):
     # finish later the decomposition of features
 
 
-class AdversaryTag(models.Model):
+class Tag(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
 
@@ -168,7 +168,7 @@ class Adversary(models.Model):
 
     status = models.CharField(max_length=3, choices=Status.choices,
                               default=Status.DRAFT, db_index=True)
-    tags = models.ManyToManyField(AdversaryTag, blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
 
     class Meta:
         constraints = [
