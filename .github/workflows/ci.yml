@@ -1,0 +1,31 @@
+name: Run tests and lint
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install cached uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.7.19"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Run Pytest
+        run: uv run pytest --cov
+
+      - name: Run ruff
+        run: uv run ruff check --output-format=github
