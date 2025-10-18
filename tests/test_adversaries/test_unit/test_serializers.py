@@ -1,7 +1,7 @@
 from rest_framework.exceptions import ErrorDetail
 
 from adversaries.models import DamageType, BasicAttack, Feature
-from adversaries.serializers.write import DamageInSerializer, \
+from api.v1.adversaries.serializers import DamageInSerializer, \
     BasicAttackInSerializer, ExperienceInSerializer, FeatureInSerializer, \
     AdversaryInSerializer
 
