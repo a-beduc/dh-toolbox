@@ -3,8 +3,8 @@ from django.core.exceptions import ValidationError as Django_ValidationError
 from django.db.models.deletion import ProtectedError as Django_ProtectedError
 from django.db.utils import IntegrityError as Django_IntegrityError
 
-from adversaries.models import Tactic, DamageProfile, DamageType, \
-    BasicAttack, Experience, Feature, Adversary
+from adversaries.models import Tactic, DamageProfile, DamageType, BasicAttack, \
+    Experience, Feature, Adversary
 
 
 # --- TACTIC TESTS --- #

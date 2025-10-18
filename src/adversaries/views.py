@@ -1,5 +1,5 @@
 from rest_framework.response import Response
-from rest_framework.viewsets import ReadOnlyModelViewSet, GenericViewSet
+from rest_framework.viewsets import GenericViewSet
 
 from adversaries.models import Experience
 from adversaries.serializers.read import ExperienceOutSerializer

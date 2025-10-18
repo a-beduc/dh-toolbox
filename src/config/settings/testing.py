@@ -1,4 +1,4 @@
-print("HEEELLO")
+print("Loading TESTING settings")
 
 DEBUG = False
 SECRET_KEY = "testing-insecure-key"

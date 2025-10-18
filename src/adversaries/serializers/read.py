@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer, CharField
+from rest_framework.serializers import ModelSerializer
 
 from accounts.models import Account
 from adversaries.models import Experience, Tactic, Tag, Feature, Adversary, \

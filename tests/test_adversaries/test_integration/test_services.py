@@ -1,10 +1,10 @@
 import pytest
 from django.db import IntegrityError
 
-from adversaries.dto import AdversaryDTO, BasicAttackDTO, DamageDTO, \
-    TacticDTO, AdversaryTagDTO, ExperienceDTO, FeatureDTO
 from adversaries.models import Adversary, DamageProfile, BasicAttack, Tactic, \
     Tag, Experience, Feature, DamageType
+from adversaries.dto import AdversaryDTO, BasicAttackDTO, DamageDTO, \
+    TacticDTO, AdversaryTagDTO, ExperienceDTO, FeatureDTO
 from adversaries.services import create_adversary
 
 

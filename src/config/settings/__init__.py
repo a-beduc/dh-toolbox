@@ -1,6 +1,6 @@
 import os
 from django.core.exceptions import ImproperlyConfigured
-from dh_toolbox.settings.base import *
+from config.settings.base import *
 
 
 ENV_NAME = os.getenv("ENV_NAME")
