@@ -43,8 +43,8 @@ class AuthorOutNestedSerializer(ModelSerializer):
 class AdversaryOutSerializer(ModelSerializer):
     author = AuthorOutNestedSerializer()
     basic_attack = BasicAttackOutNestedSerializer()
-    tactics = SlugRelatedField(many=True, slug_field='name')
-    tags = SlugRelatedField(many=True, slug_field='name')
+    tactics = SlugRelatedField(many=True, slug_field='name', read_only=True)
+    tags = SlugRelatedField(many=True, slug_field='name', read_only=True)
     experiences = ExperienceOutNestedSerializer(many=True)
     features = FeatureOutSerializer(many=True)
 
