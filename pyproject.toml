@@ -36,7 +36,8 @@ omit = [
     "wsgi.py",
     "asgi.py",
     "urls.py",
-    "/migrations/*"
+    "*/migrations/*",
+    "*/settings/*.py"
 ]
 
 [tool.coverage.report]
