@@ -53,7 +53,7 @@ class BasicAttack(models.Model):
         MELEE = "MEL", "MELEE"
         VERY_CLOSE = "VCL", "VERY CLOSE"
         CLOSE = "CLO", "CLOSE"
-        FAR = "FAR"
+        FAR = "FAR", "FAR"
         VERY_FAR = "VFA", "VERY FAR"
 
     name = models.CharField(max_length=100)
@@ -65,7 +65,8 @@ class BasicAttack(models.Model):
     damage = models.ForeignKey(
         to=DamageProfile,
         on_delete=models.PROTECT,
-        related_name="basic_attack"
+        related_name="basic_attack",
+        null=True
     )
 
     class Meta:
@@ -78,16 +79,10 @@ class BasicAttack(models.Model):
 
 
 class Experience(models.Model):
-    name = models.CharField(max_length=100)
-    bonus = models.SmallIntegerField()
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                name="experience_entity",
-                fields=("name", "bonus"),
-            )
-        ]
+    """
+    source: https://stackoverflow.com/questions/59596176/when-we-should-use-db-index-true-in-django#59596256
+    """
+    name = models.CharField(max_length=100, unique=True, db_index=True)
 
 
 class Feature(models.Model):
@@ -157,7 +152,10 @@ class Adversary(models.Model):
     atk_bonus = models.SmallIntegerField(blank=True, null=True)
     basic_attack = models.ForeignKey(to=BasicAttack, on_delete=models.PROTECT,
                                      blank=True, null=True)
-    experiences = models.ManyToManyField(Experience, blank=True)
+    experiences = models.ManyToManyField(Experience,
+                                         through="AdversaryExperience",
+                                         related_name="adversaries",
+                                         blank=True)
     features = models.ManyToManyField(Feature, blank=True)
 
     # metadata
@@ -171,6 +169,7 @@ class Adversary(models.Model):
     tags = models.ManyToManyField(Tag, blank=True)
 
     class Meta:
+        verbose_name_plural = 'Adversaries'
         constraints = [
             models.UniqueConstraint(
                 fields=("author", "name"),
@@ -187,11 +186,25 @@ class Adversary(models.Model):
             models.Index(fields=["status"])
         ]
 
-    def publish(self):
-        self.status = self.Status.PUBLISHED
-        self.save(update_fields=["status", "updated_at"])
+    def add_experience(self, experience, bonus=0):
+        AdversaryExperience.objects.create(
+            adversary=self,
+            experience=experience,
+            bonus=bonus
+        )
 
-    def unpublish(self):
-        self.status = self.Status.DRAFT
-        self.save(update_fields=["status", "updated_at"])
-        
+
+class AdversaryExperience(models.Model):
+    adversary = models.ForeignKey(Adversary, on_delete=models.CASCADE,
+                                  related_name="adversary_experiences")
+    experience = models.ForeignKey(Experience, on_delete=models.CASCADE,
+                                   related_name="adversary_experiences")
+    bonus = models.SmallIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["adversary", "experience"],
+                name="unique_adversary_experience"
+            )
+        ]
