@@ -3,25 +3,25 @@ from rest_framework.serializers import ModelSerializer
 from adversaries.models import Experience, Tactic, Tag, Feature
 
 
-class ExperienceOutSerializer(ModelSerializer):
+class ExperienceReadSerializer(ModelSerializer):
     class Meta:
         model = Experience
-        fields = ("name",)
+        fields = ("id", "name")
 
 
-class TacticOutSerializer(ModelSerializer):
+class TacticReadSerializer(ModelSerializer):
     class Meta:
         model = Tactic
-        fields = ("name",)
+        fields = ("id", "name")
 
 
-class FeatureOutSerializer(ModelSerializer):
+class FeatureReadSerializer(ModelSerializer):
     class Meta:
         model = Feature
-        fields = ('name', 'type', 'description')
+        fields = ('id', 'name', 'type', 'description')
 
 
-class TagOutSerializer(ModelSerializer):
+class TagReadSerializer(ModelSerializer):
     class Meta:
         model = Tag
-        fields = ('name',)
+        fields = ("id", "name")

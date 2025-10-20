@@ -1,59 +1,25 @@
-from rest_framework.response import Response
-from rest_framework.viewsets import GenericViewSet
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from adversaries.models import Experience, Tactic, Feature, Tag
-from api.v1.lookups.serializers import ExperienceOutSerializer, \
-    TacticOutSerializer, FeatureOutSerializer, TagOutSerializer
+from api.v1.lookups.serializers import ExperienceReadSerializer, \
+    TacticReadSerializer, FeatureReadSerializer, TagReadSerializer
 
 
-class ExperienceViewSet(GenericViewSet):
+class ExperienceViewSet(ReadOnlyModelViewSet):
     queryset = Experience.objects.all()
-    serializer_class = ExperienceOutSerializer
-
-    def list(self, request, *args, **kwargs):
-        names = (
-            Experience.objects
-            .values_list("name", flat=True)
-            .order_by("name")
-            .distinct()
-        )
-        return Response([{"name": n} for n in names])
+    serializer_class = ExperienceReadSerializer
 
 
-class TacticViewSet(GenericViewSet):
+class TacticViewSet(ReadOnlyModelViewSet):
     queryset = Tactic.objects.all()
-    serializer_class = TacticOutSerializer
-
-    def list(self, request, *args, **kwargs):
-        names = (
-            Tactic.objects
-            .values_list("name", flat=True)
-            .order_by("name")
-        )
-        return Response([{"name": n} for n in names])
+    serializer_class = TacticReadSerializer
 
 
-class FeatureViewSet(GenericViewSet):
+class FeatureViewSet(ReadOnlyModelViewSet):
     queryset = Feature.objects.all()
-    serializer_class = FeatureOutSerializer
-
-    def list(self, request, *args, **kwargs):
-        features = (
-            Feature.objects
-            .values("name", "type", "description")
-            .order_by("name")
-        )
-        return Response(features)
+    serializer_class = FeatureReadSerializer
 
 
-class TagViewSet(GenericViewSet):
+class TagViewSet(ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
-    serializer_class = TagOutSerializer
-
-    def list(self, request, *args, **kwargs):
-        names = (
-            Tag.objects
-            .values_list("name", flat=True)
-            .order_by("name")
-        )
-        return Response([{"name": n} for n in names])
+    serializer_class = TagReadSerializer
