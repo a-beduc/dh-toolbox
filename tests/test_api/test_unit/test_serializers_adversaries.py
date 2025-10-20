@@ -1,14 +1,14 @@
 from rest_framework.exceptions import ErrorDetail
 
 from adversaries.models import DamageType, BasicAttack, Feature
-from api.v1.adversaries.serializers import DamageInSerializer, \
-    BasicAttackInSerializer, ExperienceInSerializer, FeatureInSerializer, \
-    AdversaryInSerializer
+from api.v1.adversaries.serializers import DamageWriteSerializer, \
+    BasicAttackWriteSerializer, ExperienceWriteSerializer, \
+    FeatureWriteSerializer, AdversaryWriteSerializer
 
 
-# --- INPUT SERIALIZER TESTS : DamageInSerializer --- #
+# --- INPUT SERIALIZER TESTS : DamageWriteSerializer --- #
 def test_damage_in_serializer_accepts_all_none():
-    s = DamageInSerializer(data={
+    s = DamageWriteSerializer(data={
         "dice_number": None,
         "dice_type": None,
         "bonus": None,
@@ -21,13 +21,13 @@ def test_damage_in_serializer_accepts_all_none():
 
 def test_damage_in_serializer_valid_type():
     for damage_type in [c[0] for c in DamageType.choices]:
-        s = DamageInSerializer(data={"damage_type": damage_type})
+        s = DamageWriteSerializer(data={"damage_type": damage_type})
         assert s.is_valid()
         assert s.validated_data["damage_type"] == damage_type
 
 
 def test_damage_in_serializer_invalid_type():
-    s = DamageInSerializer(data={"damage_type": "BAD"})
+    s = DamageWriteSerializer(data={"damage_type": "BAD"})
     assert not s.is_valid()
     assert s.errors["damage_type"] == [
         ErrorDetail(string="Invalid value 'BAD'. Try one of "
@@ -38,9 +38,9 @@ def test_damage_in_serializer_invalid_type():
     ]
 
 
-# --- INPUT SERIALIZER TESTS : BasicAttackInSerializer --- #
+# --- INPUT SERIALIZER TESTS : BasicAttackWriteSerializer --- #
 def test_basic_attack_in_serializer_minimal_requires_name():
-    s = BasicAttackInSerializer(data={"name": "Slash"})
+    s = BasicAttackWriteSerializer(data={"name": "Slash"})
     assert s.is_valid()
     vd = s.validated_data
     assert vd["name"] == "Slash"
@@ -49,7 +49,7 @@ def test_basic_attack_in_serializer_minimal_requires_name():
 
 
 def test_basic_attack_in_serializer_allows_null_range_and_damage():
-    s = BasicAttackInSerializer(data={
+    s = BasicAttackWriteSerializer(data={
         "name": "Slash",
         "range": None,
         "damage": None,
@@ -63,13 +63,13 @@ def test_basic_attack_in_serializer_allows_null_range_and_damage():
 
 def test_basic_attack_in_serializer_valid_range():
     for range_ba in [c[0] for c in BasicAttack.Range.choices]:
-        s = BasicAttackInSerializer(data={"name": "Hit", "range": range_ba})
+        s = BasicAttackWriteSerializer(data={"name": "Hit", "range": range_ba})
         assert s.is_valid()
         assert s.validated_data["range"] == range_ba
 
 
 def test_basic_attack_in_serializer_invalid_range():
-    s = BasicAttackInSerializer(data={"name": "Hit", "range": "UNKNOWN"})
+    s = BasicAttackWriteSerializer(data={"name": "Hit", "range": "UNKNOWN"})
     assert not s.is_valid()
     assert s.errors['range'] == [
         ErrorDetail(string="Invalid value 'UNKNOWN'. Try one of "
@@ -82,17 +82,17 @@ def test_basic_attack_in_serializer_invalid_range():
     ]
 
 
-# --- INPUT SERIALIZER TESTS : ExperienceInSerializer --- #
+# --- INPUT SERIALIZER TESTS : ExperienceWriteSerializer --- #
 def test_experience_in_serializer_minimal():
-    s = ExperienceInSerializer(data={"name": "Resolve"})
+    s = ExperienceWriteSerializer(data={"name": "Resolve"})
     assert s.is_valid()
     vd = s.validated_data
     assert vd["name"] == "Resolve"
 
 
-# --- INPUT SERIALIZER TESTS : FeatureInSerializer --- #
+# --- INPUT SERIALIZER TESTS : FeatureWriteSerializer --- #
 def test_feature_in_serializer_minimal():
-    s = FeatureInSerializer(data={"name": "Scorched Earth"})
+    s = FeatureWriteSerializer(data={"name": "Scorched Earth"})
     assert s.is_valid()
     vd = s.validated_data
     assert "type" not in vd
@@ -101,14 +101,14 @@ def test_feature_in_serializer_minimal():
 
 def test_feature_in_serializer_valid_type():
     for type_f in [c[0] for c in Feature.Type.choices]:
-        s = FeatureInSerializer(data={"name": "Scorched Earth",
+        s = FeatureWriteSerializer(data={"name": "Scorched Earth",
                                       "type": type_f})
         assert s.is_valid()
         assert s.validated_data["type"] == type_f
 
 
 def test_feature_in_serializer_invalid_type():
-    s = FeatureInSerializer(data={"name": "Invalid", "type": "Invalid"})
+    s = FeatureWriteSerializer(data={"name": "Invalid", "type": "Invalid"})
     assert not s.is_valid()
     assert s.errors["type"] == [
         ErrorDetail(string="Invalid value 'Invalid'. Try one of "
@@ -119,9 +119,9 @@ def test_feature_in_serializer_invalid_type():
     ]
 
 
-# --- INPUT SERIALIZER TESTS : AdversaryInSerializer --- #
+# --- INPUT SERIALIZER TESTS : AdversaryWriteSerializer --- #
 def test_adversary_in_serializer_minimal():
-    s = AdversaryInSerializer(data={"name": "Acid Burrower"})
+    s = AdversaryWriteSerializer(data={"name": "Acid Burrower"})
     assert s.is_valid()
     vd = s.validated_data
     assert vd["name"] == "Acid Burrower"
@@ -197,7 +197,7 @@ def test_adversary_in_serializer_complete():
             }
         ]
     }
-    s = AdversaryInSerializer(data=payload)
+    s = AdversaryWriteSerializer(data=payload)
     assert s.is_valid(), s.errors
     vd = s.validated_data
 
@@ -219,6 +219,12 @@ def test_adversary_in_serializer_complete():
     assert ba["name"] == "Claws"
     assert ba["range"] == "VCL"
 
+    dmg = ba["damage"]
+    assert dmg["dice_number"] == 1
+    assert dmg["dice_type"] == 12
+    assert dmg["bonus"] == 2
+    assert dmg["damage_type"] == "PHY"
+
     assert vd["tactics"] == ["Burrow", "drag away", "feed", "reposition"]
     assert vd["tags"] == ["underworld", "cavern", "desert"]
 
@@ -233,23 +239,23 @@ def test_adversary_in_serializer_complete():
 
 
 def test_adversary_in_serializer_unknown_field_is_ignored():
-    s = AdversaryInSerializer(data={"name": "Goblin", "unknown": 1})
+    s = AdversaryWriteSerializer(data={"name": "Goblin", "unknown": 1})
     assert s.is_valid()
 
 
 def test_adversary_in_serializer_invalid_type():
-    s = AdversaryInSerializer(data={"name": "Goblin", "type": "BAD TYPE"})
+    s = AdversaryWriteSerializer(data={"name": "Goblin", "type": "BAD TYPE"})
     assert not s.is_valid()
     assert "type" in s.errors.keys()
 
 
 def test_adversary_in_serializer_invalid_tier():
-    s = AdversaryInSerializer(data={"name": "Goblin", "tier": 5})
+    s = AdversaryWriteSerializer(data={"name": "Goblin", "tier": 5})
     assert not s.is_valid()
     assert "tier" in s.errors.keys()
 
 
 def test_adversary_in_serializer_invalid_status():
-    s = AdversaryInSerializer(data={"name": "Goblin", "status": "BAD STATUS"})
+    s = AdversaryWriteSerializer(data={"name": "Goblin", "status": "BAD STATUS"})
     assert not s.is_valid()
     assert "status" in s.errors.keys()

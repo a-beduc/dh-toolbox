@@ -1,6 +1,6 @@
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import ListField
-from rest_framework.relations import SlugRelatedField
+from rest_framework.fields import ListField, SerializerMethodField
+from rest_framework.relations import SlugRelatedField, HyperlinkedIdentityField
 from rest_framework.serializers import ModelSerializer
 from rest_framework.serializers import Serializer, IntegerField, \
     CharField
@@ -8,59 +8,126 @@ from rest_framework.serializers import Serializer, IntegerField, \
 from accounts.models import Account
 from adversaries.dto import DamageDTO, BasicAttackDTO, AdversaryDTO, \
     TacticDTO, AdversaryTagDTO, ExperienceDTO, FeatureDTO
+from adversaries.helpers.formatting import format_basic_attack, \
+    format_csv_name, format_csv_experience
 from adversaries.helpers.normalizers import normalize_choices
 from adversaries.models import Experience, Adversary, DamageProfile, \
-    BasicAttack
+    BasicAttack, AdversaryExperience, Feature
 from adversaries.services import create_adversary
-from api.v1.lookups.serializers import FeatureOutSerializer
 
 
-class ExperienceOutNestedSerializer(ModelSerializer):
-    class Meta:
-        model = Experience
-        fields = ("name", "bonus")
-
-
-class DamageProfileOutNestedSerializer(ModelSerializer):
+class DamageProfileReadNestedSerializer(ModelSerializer):
     class Meta:
         model = DamageProfile
         fields = ("dice_number", "dice_type", "bonus", "damage_type")
 
 
-class BasicAttackOutNestedSerializer(ModelSerializer):
-    damage = DamageProfileOutNestedSerializer()
+class BasicAttackReadNestedSerializer(ModelSerializer):
+    damage = DamageProfileReadNestedSerializer()
     class Meta:
         model = BasicAttack
         fields = ("name", "range", "damage")
 
 
-class AuthorOutNestedSerializer(ModelSerializer):
+class AuthorReadNestedSerializer(ModelSerializer):
     class Meta:
         model = Account
         fields = ("id", "username")
 
 
-class AdversaryOutSerializer(ModelSerializer):
-    author = AuthorOutNestedSerializer()
-    basic_attack = BasicAttackOutNestedSerializer()
-    tactics = SlugRelatedField(many=True, slug_field='name', read_only=True)
-    tags = SlugRelatedField(many=True, slug_field='name', read_only=True)
-    experiences = ExperienceOutNestedSerializer(many=True)
-    features = FeatureOutSerializer(many=True)
+class AdversaryExperienceReadSerializer(ModelSerializer):
+    name = CharField(source="experience.name")
+
+    class Meta:
+        model = AdversaryExperience
+        fields = ("name", "bonus")
+
+
+class FeatureReadNestedSerializer(ModelSerializer):
+    class Meta:
+        model = Feature
+        fields = ('id', 'name', 'type', 'description')
+
+
+class AdversaryListSerializer(ModelSerializer):
+    author = AuthorReadNestedSerializer()
+    basic_attack = SerializerMethodField()
+    tactics = SerializerMethodField()
+    tags = SerializerMethodField()
+    features = SerializerMethodField()
+    experiences = SerializerMethodField()
+    url = HyperlinkedIdentityField(
+        view_name="adversaries-detail",
+        lookup_field="pk"
+    )
+
+    def get_basic_attack(self, obj):
+        if obj.basic_attack:
+            return format_basic_attack(
+                name=obj.basic_attack.name,
+                rge=obj.basic_attack.range,
+                dice_number=obj.basic_attack.damage.dice_number,
+                dice_type=obj.basic_attack.damage.dice_type,
+                bonus=obj.basic_attack.damage.bonus,
+                damage_type=obj.basic_attack.damage.damage_type
+            )
+        return None
+
+    def get_tactics(self, obj):
+        if obj.tactics:
+            return format_csv_name(obj.tactics.all())
+        return None
+
+    def get_tags(self, obj):
+        if obj.tags:
+            return format_csv_name(obj.tags.all())
+        return None
+
+    def get_experiences(self, obj):
+        if obj.adversary_experiences:
+            return format_csv_experience(obj.adversary_experiences.all())
+        return None
+
+    def get_features(self, obj):
+        if obj.features:
+            return format_csv_name(obj.features.all())
+        return None
 
     class Meta:
         model = Adversary
         fields = (
             "id", "name", "tier", "type", "description", "difficulty",
             "threshold_major", "threshold_severe", "hit_point",
-            "horde_hit_point", "stress_point", "atk_bonus",
-            "tactics", "experiences", "features",
+            "horde_hit_point", "stress_point", "atk_bonus", "basic_attack",
+            "experiences", "tactics", "features",
+            "author", "source", "status", "tags", "url"
+        )
+
+
+class AdversaryReadSerializer(ModelSerializer):
+    author = AuthorReadNestedSerializer()
+    basic_attack = BasicAttackReadNestedSerializer()
+
+    tactics = SlugRelatedField(many=True, slug_field='name', read_only=True)
+    tags = SlugRelatedField(many=True, slug_field='name', read_only=True)
+    features = FeatureReadNestedSerializer(many=True, read_only=True)
+
+    experiences = AdversaryExperienceReadSerializer(
+        source="adversary_experiences", many=True, read_only=True)
+
+    class Meta:
+        model = Adversary
+        fields = (
+            "id", "name", "tier", "type", "description", "difficulty",
+            "threshold_major", "threshold_severe", "hit_point",
+            "horde_hit_point", "stress_point", "atk_bonus", "basic_attack",
+            "experiences", "tactics", "features",
             "author", "source", "created_at", "updated_at", "status", "tags"
         )
 
 
 # --- Serializers for input data --- #
-class DamageInSerializer(Serializer):
+class DamageWriteSerializer(Serializer):
     dice_number = IntegerField(required=False, allow_null=True, min_value=0)
     dice_type = IntegerField(required=False, allow_null=True, min_value=0)
     bonus = IntegerField(required=False, allow_null=True)
@@ -70,21 +137,21 @@ class DamageInSerializer(Serializer):
         return normalize_choices(value, "DMG_TYPE")
 
 
-class BasicAttackInSerializer(Serializer):
-    name = CharField()
+class BasicAttackWriteSerializer(Serializer):
+    name = CharField(required=False, allow_null=True)
     range = CharField(required=False, allow_null=True)
-    damage = DamageInSerializer(required=False, allow_null=True)
+    damage = DamageWriteSerializer(required=False, allow_null=True)
 
     def validate_range(self, value):
         return normalize_choices(value, "BA_RANGE")
 
 
-class ExperienceInSerializer(Serializer):
+class ExperienceWriteSerializer(Serializer):
     name = CharField()
     bonus = IntegerField(required=False, allow_null=True)
 
 
-class FeatureInSerializer(Serializer):
+class FeatureWriteSerializer(Serializer):
     name = CharField()
     type = CharField(required=False, allow_null=True)
     description = CharField(required=False, allow_null=True)
@@ -93,12 +160,13 @@ class FeatureInSerializer(Serializer):
         return normalize_choices(value, "FEAT_TYPE")
 
 
-class AdversaryInSerializer(Serializer):
+class AdversaryWriteSerializer(Serializer):
     name = CharField()
     tier = CharField(required=False, allow_null=True)
     type = CharField(required=False, allow_null=True)
     description = CharField(required=False, allow_null=True)
-    difficulty = IntegerField(required=False, allow_null=True, min_value=0)
+    difficulty = IntegerField(required=False, allow_null=True, min_value=0,
+                              write_only=True)
     threshold_major = IntegerField(required=False, allow_null=True,
                                    min_value=0)
     threshold_severe = IntegerField(required=False, allow_null=True,
@@ -111,13 +179,17 @@ class AdversaryInSerializer(Serializer):
     source = CharField(required=False, allow_null=True)
     status = CharField(required=False, allow_null=True)
 
-    basic_attack = BasicAttackInSerializer(required=False, allow_null=True)
+    basic_attack = BasicAttackWriteSerializer(required=False, allow_null=True)
 
-    tactics = ListField(child=CharField(), required=False, default=list)
-    tags = ListField(child=CharField(), required=False, default=list)
-    experiences = ExperienceInSerializer(many=True, required=False,
-                                         default=list)
-    features = FeatureInSerializer(many=True, required=False, default=list)
+    tactics = ListField(child=CharField(), required=False, default=list, write_only=True)
+    tags = ListField(child=CharField(), required=False, default=list, write_only=True)
+    experiences = ExperienceWriteSerializer(many=True, required=False,
+                                         default=list, write_only=True)
+    features = FeatureWriteSerializer(many=True, required=False, default=list, write_only=True)
+
+    def to_representation(self, instance):
+        """Force a reserialization of instance after post/patch/put"""
+        return AdversaryReadSerializer(instance, context=self.context).data
 
     def validate_type(self, value):
         return normalize_choices(value, "ADV_TYPE")
