@@ -151,21 +151,9 @@ def test_basic_attack_fk_protect(conf_basic_attack):
 # --- EXPERIENCE TESTS --- #
 @pytest.mark.django_db
 def test_experience_unique_entity():
-    Experience.objects.create(name="Keen Senses", bonus=3)
+    Experience.objects.create(name="Keen Senses")
     with pytest.raises(Django_IntegrityError):
-        Experience.objects.create(name="Keen Senses", bonus=3)
-
-
-@pytest.mark.django_db
-def test_experience_same_name_different_bonus():
-    Experience.objects.create(name="Keen Senses", bonus=3)
-    Experience.objects.create(name="Keen Senses", bonus=2)
-    assert Experience.objects.count() == 2
-
-
-@pytest.mark.django_db
-def test_experience_negative_bonus():
-    Experience.objects.create(name="Keen Senses", bonus=-3)
+        Experience.objects.create(name="Keen Senses")
 
 
 # --- FEATURE TESTS --- #
@@ -195,9 +183,10 @@ def test_adversary_defaults_and_relations(conf_basic_attack, conf_account):
     t2 = Tactic.objects.create(name="Flank")
     adv.tactics.add(t1, t2)
 
-    e1 = Experience.objects.create(name="Keen Senses", bonus=3)
-    e2 = Experience.objects.create(name="Relentless", bonus=1)
-    adv.experiences.add(e1, e2)
+    e1 = Experience.objects.create(name="Keen Senses")
+    e2 = Experience.objects.create(name="Relentless")
+    adv.add_experience(e1, bonus=3)
+    adv.add_experience(e2, bonus=-4)
 
     f1 = Feature.objects.create(name="Earth Eruption",
                                 type=Feature.Type.ACTION)
