@@ -11,3 +11,5 @@ db.sqlite3
 script.sh
 
 .coverage
+
+/htmlcov
