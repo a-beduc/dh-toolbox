@@ -2,7 +2,7 @@ import pytest
 from django.db import IntegrityError
 
 from adversaries.models import Adversary, DamageProfile, BasicAttack, Tactic, \
-    Tag, Experience, Feature, DamageType
+    Tag, Experience, Feature, DamageType, AdversaryExperience
 from adversaries.dto import AdversaryDTO, BasicAttackDTO, DamageDTO, \
     TacticDTO, AdversaryTagDTO, ExperienceDTO, FeatureDTO
 from adversaries.services import create_adversary
@@ -75,8 +75,14 @@ def test_create_adversary_with_nested_and_m2m(conf_account):
     assert set(adv.tactics.values_list("name", flat=True)) == {"flank",
                                                                "overwhelm"}
     assert set(adv.tags.values_list("name", flat=True)) == {"dragon", "fire"}
-    assert set(adv.experiences.values_list("name", "bonus")) == {
-        ("Scorched Earth", 2), ("Flying", 3)}
+
+    # Need to go through intermediary class
+    adv_exps = (
+        AdversaryExperience.objects.filter(adversary=adv)
+        .select_related("experience")
+        .values_list("experience__name", "bonus")
+    )
+    assert set(adv_exps) == {("Scorched Earth", 2), ("Flying", 3)}
 
     assert set(adv.features.values_list("name", "type", "description")) == {
         ("Wing Buffet", Feature.Type.ACTION, "Push targets")

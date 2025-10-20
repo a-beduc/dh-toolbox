@@ -10,16 +10,19 @@ def remove_none_field(d):
 
 @transaction.atomic
 def create_adversary(dto):
+    # Known issue, dto.basic_attack is NEVER none even with empty values
     ba_obj = None
     if dto.basic_attack is not None:
+        dp_obj = None
         dmg = dto.basic_attack.damage
-        dp_kwargs = remove_none_field({
-            "dice_number": dmg.dice_number,
-            "dice_type": dmg.dice_type,
-            "bonus": dmg.bonus,
-            "damage_type": dmg.damage_type,
-        })
-        dp_obj, _ = DamageProfile.objects.get_or_create(**dp_kwargs)
+        if dmg:
+            dp_kwargs = remove_none_field({
+                "dice_number": dmg.dice_number,
+                "dice_type": dmg.dice_type,
+                "bonus": dmg.bonus,
+                "damage_type": dmg.damage_type,
+            })
+            dp_obj, _ = DamageProfile.objects.get_or_create(**dp_kwargs)
 
         ba_kwargs = remove_none_field({
             "name": dto.basic_attack.name,
@@ -55,11 +58,15 @@ def create_adversary(dto):
         obj, _ = Tag.objects.get_or_create(name=tg.name)
         adv.tags.add(obj)
     for exp in dto.experiences:
-        e, _ = Experience.objects.get_or_create(name=exp.name, bonus=exp.bonus)
-        adv.experiences.add(e)
+        obj, _ = Experience.objects.get_or_create(name=exp.name)
+        adv.add_experience(obj, bonus=exp.bonus)
     for f in dto.features:
         feat, _ = Feature.objects.get_or_create(
             name=f.name, type=Feature.Type(f.type), description=f.description)
         adv.features.add(feat)
 
     return adv
+
+
+def update_adversary(dto):
+    pass
