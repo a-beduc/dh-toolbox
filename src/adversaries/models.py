@@ -1,21 +1,61 @@
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
+from django.db.models.functions import Lower
 
 from accounts.models import Account
 
 
 class Tactic(models.Model):
+    """Value object"""
     name = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                Lower("name"),
+                name="uniq_tactic_value_object"
+            )
+        ]
+
+
+class Tag(models.Model):
+    """Value object"""
+    name = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                Lower("name"),
+                name="uniq_tag_value_object"
+            )
+        ]
+
+
+class Experience(models.Model):
+    """Value object
+    source: https://stackoverflow.com/questions/59596176/when-we-should-use-db-index-true-in-django#59596256
+    """
+    name = models.CharField(max_length=100, unique=True, db_index=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                Lower("name"),
+                name="uniq_experience_value_object"
+            )
+        ]
 
 
 class DamageType(models.TextChoices):
+    """Out of class because might be used by DamageProfile and Feature"""
     PHYSICAL = "PHY", "PHYSICAL"
     MAGICAL = "MAG", "MAGICAL"
     BOTH = "BTH", "BOTH"
 
 
 class DamageProfile(models.Model):
+    """Value object"""
     dice_number = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(0)],
         default=0,
@@ -42,13 +82,14 @@ class DamageProfile(models.Model):
                 ),
             ),
             models.UniqueConstraint(
-                name="damage_profile_entity",
+                name="damage_profile_value_object",
                 fields=("dice_number", "dice_type", "bonus", "damage_type"),
             )
         ]
 
 
 class BasicAttack(models.Model):
+    """Value object"""
     class Range(models.TextChoices):
         MELEE = "MEL", "MELEE"
         VERY_CLOSE = "VCL", "VERY CLOSE"
@@ -72,20 +113,14 @@ class BasicAttack(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                name="basic_attack_entity",
+                name="basic_attack_value_object",
                 fields=("name", "range", "damage"),
             )
         ]
 
 
-class Experience(models.Model):
-    """
-    source: https://stackoverflow.com/questions/59596176/when-we-should-use-db-index-true-in-django#59596256
-    """
-    name = models.CharField(max_length=100, unique=True, db_index=True)
-
-
 class Feature(models.Model):
+    """Entity"""
     class Type(models.TextChoices):
         PASSIVE = "PAS", "PASSIVE"
         ACTION = "ACT", "ACTION"
@@ -93,16 +128,22 @@ class Feature(models.Model):
 
     name = models.CharField(max_length=100)
     type = models.CharField(max_length=3, choices=Type.choices)
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField(null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("name", "type", "description"),
+                name="feature_entity"
+            )
+        ]
     # finish later the decomposition of features
 
 
-class Tag(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-
-
 class Adversary(models.Model):
-    """Temporary notes, to avoid IntegrityError that may appear when
+    """Entity / Aggregate
+
+    Temporary notes, to avoid IntegrityError that may appear when
     creating an adversary using entities (exp, feature, basic_attack)
     that already exist, use 'get_or_create' or a try/except in the
     service layer to fetch existing entities before adding new rows."""
@@ -138,42 +179,41 @@ class Adversary(models.Model):
         choices=Type.choices,
         default=Type.STANDARD
     )
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField(null=True)
 
-    tactics = models.ManyToManyField(Tactic, blank=True)
+    tactics = models.ManyToManyField(Tactic, null=True)
 
-    difficulty = models.PositiveSmallIntegerField(blank=True, null=True)
-    threshold_major = models.PositiveSmallIntegerField(blank=True, null=True)
-    threshold_severe = models.PositiveSmallIntegerField(blank=True, null=True)
-    hit_point = models.PositiveSmallIntegerField(blank=True, null=True)
-    horde_hit_point = models.PositiveSmallIntegerField(blank=True, null=True)
-    stress_point = models.PositiveSmallIntegerField(blank=True, null=True)
+    difficulty = models.PositiveSmallIntegerField(null=True)
+    threshold_major = models.PositiveSmallIntegerField(null=True)
+    threshold_severe = models.PositiveSmallIntegerField(null=True)
+    hit_point = models.PositiveSmallIntegerField(null=True)
+    horde_hit_point = models.PositiveSmallIntegerField(null=True)
+    stress_point = models.PositiveSmallIntegerField(null=True)
 
-    atk_bonus = models.SmallIntegerField(blank=True, null=True)
+    atk_bonus = models.SmallIntegerField(null=True)
     basic_attack = models.ForeignKey(to=BasicAttack, on_delete=models.PROTECT,
-                                     blank=True, null=True)
+                                     null=True)
     experiences = models.ManyToManyField(Experience,
                                          through="AdversaryExperience",
-                                         related_name="adversaries",
-                                         blank=True)
-    features = models.ManyToManyField(Feature, blank=True)
+                                         related_name="adversaries")
+    features = models.ManyToManyField(Feature)
 
     # metadata
     author = models.ForeignKey(to=Account, on_delete=models.PROTECT)
-    source = models.CharField(max_length=200, blank=True, null=True)
+    source = models.CharField(max_length=200, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     status = models.CharField(max_length=3, choices=Status.choices,
                               default=Status.DRAFT, db_index=True)
-    tags = models.ManyToManyField(Tag, blank=True)
+    tags = models.ManyToManyField(Tag, null=True)
 
     class Meta:
         verbose_name_plural = 'Adversaries'
         constraints = [
             models.UniqueConstraint(
                 fields=("author", "name"),
-                name="unique_author_name",
+                name="adversary_entity",
             ),
             models.CheckConstraint(
                 name="adversary_name_not_empty",
@@ -195,6 +235,7 @@ class Adversary(models.Model):
 
 
 class AdversaryExperience(models.Model):
+    """M2M relationship manager"""
     adversary = models.ForeignKey(Adversary, on_delete=models.CASCADE,
                                   related_name="adversary_experiences")
     experience = models.ForeignKey(Experience, on_delete=models.CASCADE,
