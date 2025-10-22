@@ -4,10 +4,11 @@ from django.db import IntegrityError
 from adversaries.models import Adversary, DamageProfile, BasicAttack, Tactic, \
     Tag, Experience, Feature, DamageType, AdversaryExperience
 from adversaries.dto import AdversaryDTO, BasicAttackDTO, DamageDTO, \
-    TacticDTO, AdversaryTagDTO, ExperienceDTO, FeatureDTO
-from adversaries.services import create_adversary
+    TacticDTO, TagDTO, ExperienceDTO, FeatureDTO
+from adversaries.services import create_adversary, _sync_experiences
 
 
+# --- CREATE TESTS --- #
 @pytest.mark.django_db
 def test_create_adversary_minimal_default(conf_account):
     dto = AdversaryDTO(
@@ -43,7 +44,7 @@ def test_create_adversary_with_nested_and_m2m(conf_account):
                              damage_type="MAG"),
         ),
         tactics=[TacticDTO(name="flank"), TacticDTO(name="overwhelm")],
-        tags=[AdversaryTagDTO(name="dragon"), AdversaryTagDTO(name="fire")],
+        tags=[TagDTO(name="dragon"), TagDTO(name="fire")],
         experiences=[ExperienceDTO(name="Scorched Earth", bonus=2),
                      ExperienceDTO(name="Flying", bonus=3)],
         features=[FeatureDTO(name="Wing Buffet", type="ACT",
