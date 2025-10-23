@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from adversaries.models import Adversary, BasicAttack, DamageProfile, \
-    Experience, Feature, Tactic, AdversaryExperience
+    Experience, Feature, Tactic, AdversaryExperience, Tag
 
 
 class AdversaryExperienceInline(admin.TabularInline):
@@ -40,4 +40,9 @@ class FeatureAdmin(admin.ModelAdmin):
 
 @admin.register(Tactic)
 class TacticAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
     pass
