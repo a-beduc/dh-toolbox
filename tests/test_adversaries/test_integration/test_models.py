@@ -36,7 +36,7 @@ def test_damage_profile_defaults():
     assert dp.dice_number == 0
     assert dp.dice_type == 0
     assert dp.bonus == 0
-    assert dp.damage_type == DamageType.PHYSICAL
+    assert dp.damage_type == DamageType.UNSPECIFIED
 
 
 @pytest.mark.django_db
@@ -131,7 +131,7 @@ def test_basic_attack_default_values(conf_flat_dp, conf_roll_dp):
                                       damage=conf_roll_dp,
                                       range="VFA")
 
-    assert flat.range == BasicAttack.Range.MELEE
+    assert flat.range == BasicAttack.Range.UNSPECIFIED
     assert roll.range == BasicAttack.Range.VERY_FAR
 
 
@@ -176,8 +176,8 @@ def test_adversary_defaults_and_relations(conf_basic_attack, conf_account):
                                    basic_attack=conf_basic_attack,
                                    author=conf_account)
 
-    assert adv.tier == Adversary.Tier.ONE
-    assert adv.type == Adversary.Type.STANDARD
+    assert adv.tier == Adversary.Tier.UNSPECIFIED
+    assert adv.type == Adversary.Type.UNSPECIFIED
 
     t1 = Tactic.objects.create(name="Ambush")
     t2 = Tactic.objects.create(name="Flank")

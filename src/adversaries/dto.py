@@ -36,7 +36,7 @@ class FeatureDTO:
 
 
 @dataclass(frozen=True, slots=True)
-class AdversaryTagDTO:
+class TagDTO:
     name: str
 
 
@@ -61,4 +61,6 @@ class AdversaryDTO:
     tactics: List["TacticDTO"] = field(default_factory=list)
     experiences: List["ExperienceDTO"] = field(default_factory=list)
     features: List["FeatureDTO"] = field(default_factory=list)
-    tags: List["AdversaryTagDTO"] = field(default_factory=list)
+    tags: List["TagDTO"] = field(default_factory=list)
+
+

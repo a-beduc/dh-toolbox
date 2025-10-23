@@ -7,7 +7,7 @@ from rest_framework.serializers import Serializer, IntegerField, \
 
 from accounts.models import Account
 from adversaries.dto import DamageDTO, BasicAttackDTO, AdversaryDTO, \
-    TacticDTO, AdversaryTagDTO, ExperienceDTO, FeatureDTO
+    TacticDTO, TagDTO, ExperienceDTO, FeatureDTO
 from adversaries.helpers.formatting import format_basic_attack, \
     format_csv_name, format_csv_experience
 from adversaries.helpers.normalizers import normalize_choices
@@ -162,30 +162,30 @@ class FeatureWriteSerializer(Serializer):
 
 class AdversaryWriteSerializer(Serializer):
     name = CharField()
-    tier = CharField(required=False, allow_null=True)
-    type = CharField(required=False, allow_null=True)
-    description = CharField(required=False, allow_null=True)
-    difficulty = IntegerField(required=False, allow_null=True, min_value=0,
-                              write_only=True)
-    threshold_major = IntegerField(required=False, allow_null=True,
-                                   min_value=0)
-    threshold_severe = IntegerField(required=False, allow_null=True,
-                                    min_value=0)
-    hit_point = IntegerField(required=False, allow_null=True, min_value=0)
-    horde_hit_point = IntegerField(required=False, allow_null=True,
-                                   min_value=0)
-    stress_point = IntegerField(required=False, allow_null=True, min_value=0)
-    atk_bonus = IntegerField(required=False, allow_null=True)
-    source = CharField(required=False, allow_null=True)
-    status = CharField(required=False, allow_null=True)
+    tier = CharField(allow_null=True, required=False)
+    type = CharField(allow_null=True, required=False)
+    description = CharField(allow_null=True, required=False)
+    difficulty = IntegerField(allow_null=True, min_value=0,
+                              write_only=True, required=False)
+    threshold_major = IntegerField(allow_null=True,
+                                   min_value=0, required=False)
+    threshold_severe = IntegerField(allow_null=True,
+                                    min_value=0, required=False)
+    hit_point = IntegerField(allow_null=True, min_value=0, required=False)
+    horde_hit_point = IntegerField(allow_null=True,
+                                   min_value=0, required=False)
+    stress_point = IntegerField(allow_null=True, min_value=0, required=False)
+    atk_bonus = IntegerField(allow_null=True, required=False)
+    source = CharField(allow_null=True, required=False)
+    status = CharField(allow_null=True, required=False)
 
-    basic_attack = BasicAttackWriteSerializer(required=False, allow_null=True)
+    basic_attack = BasicAttackWriteSerializer(allow_null=True, required=False)
 
-    tactics = ListField(child=CharField(), required=False, default=list, write_only=True)
-    tags = ListField(child=CharField(), required=False, default=list, write_only=True)
+    tactics = ListField(child=CharField(), default=list, write_only=True)
+    tags = ListField(child=CharField(), default=list, write_only=True)
     experiences = ExperienceWriteSerializer(many=True, required=False,
-                                         default=list, write_only=True)
-    features = FeatureWriteSerializer(many=True, required=False, default=list, write_only=True)
+                                            default=list, write_only=True)
+    features = FeatureWriteSerializer(many=True, default=list, write_only=True)
 
     def to_representation(self, instance):
         """Force a reserialization of instance after post/patch/put"""
@@ -245,7 +245,7 @@ class AdversaryWriteSerializer(Serializer):
             status=validated.get("status"),
             basic_attack=ba_dto,
             tactics=[TacticDTO(name=s) for s in validated.get("tactics", [])],
-            tags=[AdversaryTagDTO(name=s) for s in validated.get("tags", [])],
+            tags=[TagDTO(name=s) for s in validated.get("tags", [])],
             experiences=[ExperienceDTO(**e) for e in
                          validated.get("experiences", [])],
             features=[FeatureDTO(**f) for f in validated.get("features", [])],

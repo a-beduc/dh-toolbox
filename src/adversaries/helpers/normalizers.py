@@ -6,12 +6,14 @@ def _norm_key(s):
 
 
 DMG_TYPE = {
+    None: "UNK", "": "UNK", "UNK": "UNK", "UNKNOWN": "UNK",
     "PHY": "PHY", "PHYSICAL": "PHY",
     "MAG": "MAG", "MAGICAL": "MAG",
     "BTH": "BTH", "BOTH": "BTH", "PHY/MAG": "BTH",
 }
 
 BA_RANGE = {
+    None: "UNK", "": "UNK", "UNK": "UNK", "UNKNOWN": "UNK",
     "MEL": "MEL", "MELEE": "MEL",
     "CLO": "CLO", "CLOSE": "CLO",
     "FAR": "FAR",
@@ -20,12 +22,14 @@ BA_RANGE = {
 }
 
 FEAT_TYPE = {
+    None: "UNK", "": "UNK", "UNK": "UNK", "UNKNOWN": "UNK",
     "PAS": "PAS", "PASSIVE": "PAS",
     "ACT": "ACT", "ACTION": "ACT",
     "REA": "REA", "REACTION": "REA",
 }
 
 ADV_TYPE = {
+    None: "UNK", "": "UNK", "UNK": "UNK", "UNKNOWN": "UNK",
     "BRU": "BRU", "BRUISER": "BRU",
     "HOR": "HOR", "HORDE": "HOR",
     "LEA": "LEA", "LEADER": "LEA",
@@ -39,6 +43,7 @@ ADV_TYPE = {
 }
 
 ADV_TIER = {
+    None: "UNK", "": "UNK", "UNK": "UNK", "UNKNOWN": "UNK",
     "1": 1, 1: 1, "ONE": 1, "I": 1,
     "2": 2, 2: 2, "TWO": 2, "II": 2,
     "3": 3, 3: 3, "THREE": 3, "III": 3,
@@ -46,6 +51,7 @@ ADV_TIER = {
 }
 
 ADV_STATUS = {
+    None: "UNK", "": "UNK", "UNK": "UNK", "UNKNOWN": "UNK",
     "DRA": "DRA", "DRAFT": "DRA",
     "PUB": "PUB", "PUBLISHED": "PUB",
 }

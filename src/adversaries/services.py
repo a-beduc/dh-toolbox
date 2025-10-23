@@ -11,6 +11,7 @@ def _remove_none_field(d):
 
 @transaction.atomic
 def create_adversary(dto):
+    """TODO: Optimize queries later (less query if possible)"""
     ba_obj = None
     if dto.basic_attack is not None:
         dp_obj = None
@@ -49,7 +50,9 @@ def create_adversary(dto):
         "status": dto.status,
     })
 
-    adv = Adversary.objects.create(**adv_kwargs)
+    adv = Adversary(**adv_kwargs)
+    adv.full_clean()
+    adv.save()
 
     for t in dto.tactics:
         obj, _ = Tactic.objects.get_or_create(name=t.name)
@@ -68,8 +71,6 @@ def create_adversary(dto):
     return adv
 
 
-def update_adversary(dto):
-    pass
 def _sync_experiences(adv, exp_dtos):
     target = {e.name: e.bonus for e in exp_dtos}
     if not target:

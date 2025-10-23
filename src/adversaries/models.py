@@ -34,7 +34,8 @@ class Tag(models.Model):
 
 class Experience(models.Model):
     """Value object
-    source: https://stackoverflow.com/questions/59596176/when-we-should-use-db-index-true-in-django#59596256
+    source: https://stackoverflow.com/questions/59596176/
+    when-we-should-use-db-index-true-in-django#59596256
     """
     name = models.CharField(max_length=100, unique=True, db_index=True)
 
@@ -49,9 +50,12 @@ class Experience(models.Model):
 
 class DamageType(models.TextChoices):
     """Out of class because might be used by DamageProfile and Feature"""
+    UNSPECIFIED = "UNK", "UNSPECIFIED"
     PHYSICAL = "PHY", "PHYSICAL"
     MAGICAL = "MAG", "MAGICAL"
     BOTH = "BTH", "BOTH"
+
+    __empty__ = "(Unspecified)"
 
 
 class DamageProfile(models.Model):
@@ -69,8 +73,20 @@ class DamageProfile(models.Model):
     damage_type = models.CharField(
         max_length=3,
         choices=DamageType.choices,
-        default=DamageType.PHYSICAL,
+        default=DamageType.UNSPECIFIED,
+        blank=True
     )
+
+    @property
+    def damage_type_value(self):
+        """Interface to accept None as a valid choice"""
+        return self.damage_type
+
+    @damage_type_value.setter
+    def damage_type_value(self, value):
+        self.damage_type = DamageType.UNSPECIFIED \
+            if value in (None, "") \
+            else value
 
     class Meta:
         constraints = [
@@ -91,24 +107,37 @@ class DamageProfile(models.Model):
 class BasicAttack(models.Model):
     """Value object"""
     class Range(models.TextChoices):
+        UNSPECIFIED = "UNK", "UNSPECIFIED"
         MELEE = "MEL", "MELEE"
         VERY_CLOSE = "VCL", "VERY CLOSE"
         CLOSE = "CLO", "CLOSE"
         FAR = "FAR", "FAR"
         VERY_FAR = "VFA", "VERY FAR"
 
+        __empty__ = "(Unspecified)"
+
     name = models.CharField(max_length=100)
     range = models.CharField(
         max_length=3,
         choices=Range.choices,
-        default=Range.MELEE
+        default=Range.UNSPECIFIED,
+        blank=True
     )
     damage = models.ForeignKey(
         to=DamageProfile,
         on_delete=models.PROTECT,
         related_name="basic_attack",
+        blank=True,
         null=True
     )
+
+    @property
+    def range_value(self):
+        return self.range
+
+    @range_value.setter
+    def range_value(self, value):
+        self.range = self.Range.UNSPECIFIED if value in (None, "") else value
 
     class Meta:
         constraints = [
@@ -122,13 +151,29 @@ class BasicAttack(models.Model):
 class Feature(models.Model):
     """Entity"""
     class Type(models.TextChoices):
+        UNSPECIFIED = "UNK", "UNSPECIFIED"
         PASSIVE = "PAS", "PASSIVE"
         ACTION = "ACT", "ACTION"
         REACTION = "REA", "REACTION"
 
+        __empty__ = "(Unspecified)"
+
     name = models.CharField(max_length=100)
-    type = models.CharField(max_length=3, choices=Type.choices)
-    description = models.TextField(null=True)
+    type = models.CharField(
+        max_length=3,
+        choices=Type.choices,
+        default=Type.UNSPECIFIED,
+        blank=True
+    )
+    description = models.TextField(null=True, blank=True)
+
+    @property
+    def type_value(self):
+        return self.type
+
+    @type_value.setter
+    def type_value(self, value):
+        self.type = self.Type.UNSPECIFIED if value in (None, "") else value
 
     class Meta:
         constraints = [
@@ -148,6 +193,7 @@ class Adversary(models.Model):
     that already exist, use 'get_or_create' or a try/except in the
     service layer to fetch existing entities before adding new rows."""
     class Type(models.TextChoices):
+        UNSPECIFIED = "UNK", "UNSPECIFIED"
         BRUISER = "BRU", "BRUISER"
         HORDE = "HOR", "HORDE"
         LEADER = "LEA", "LEADER"
@@ -159,54 +205,104 @@ class Adversary(models.Model):
         STANDARD = "STA", "STANDARD"
         SUPPORT = "SUP", "SUPPORT"
 
+        __empty__ = "(Unspecified)"
+
     class Tier(models.IntegerChoices):
+        UNSPECIFIED = 0, "UNSPECIFIED"
         ONE = 1, "I"
         TWO = 2, "II"
         THREE = 3, "III"
         FOUR = 4, "IV"
 
+        __empty__ = "(Unspecified)"
+
     class Status(models.TextChoices):
+        UNSPECIFIED = "UNK", "UNSPECIFIED"
         DRAFT = "DRA", "DRAFT"
         PUBLISHED = "PUB", "PUBLISHED"
 
+        __empty__ = "(Unspecified)"
+
+    # simple attributes
     name = models.CharField(max_length=120, blank=False)
     tier = models.PositiveSmallIntegerField(
         choices=Tier.choices,
-        default=Tier.ONE
+        default=Tier.UNSPECIFIED,
+        blank=True,
+        db_column="tier"
     )
     type = models.CharField(
         max_length=3,
         choices=Type.choices,
-        default=Type.STANDARD
+        default=Type.UNSPECIFIED,
+        blank=True,
+        db_column="type"
     )
-    description = models.TextField(null=True)
-
-    tactics = models.ManyToManyField(Tactic, null=True)
-
-    difficulty = models.PositiveSmallIntegerField(null=True)
-    threshold_major = models.PositiveSmallIntegerField(null=True)
-    threshold_severe = models.PositiveSmallIntegerField(null=True)
-    hit_point = models.PositiveSmallIntegerField(null=True)
-    horde_hit_point = models.PositiveSmallIntegerField(null=True)
-    stress_point = models.PositiveSmallIntegerField(null=True)
-
-    atk_bonus = models.SmallIntegerField(null=True)
-    basic_attack = models.ForeignKey(to=BasicAttack, on_delete=models.PROTECT,
-                                     null=True)
-    experiences = models.ManyToManyField(Experience,
-                                         through="AdversaryExperience",
-                                         related_name="adversaries")
-    features = models.ManyToManyField(Feature)
+    description = models.TextField(null=True, blank=True)
+    difficulty = models.PositiveSmallIntegerField(null=True, blank=True)
+    threshold_major = models.PositiveSmallIntegerField(null=True, blank=True)
+    threshold_severe = models.PositiveSmallIntegerField(null=True, blank=True)
+    hit_point = models.PositiveSmallIntegerField(null=True, blank=True)
+    horde_hit_point = models.PositiveSmallIntegerField(null=True, blank=True)
+    stress_point = models.PositiveSmallIntegerField(null=True, blank=True)
+    atk_bonus = models.SmallIntegerField(null=True, blank=True)
 
     # metadata
     author = models.ForeignKey(to=Account, on_delete=models.PROTECT)
-    source = models.CharField(max_length=200, null=True)
+    source = models.CharField(max_length=200, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(
+        max_length=3,
+        choices=Status.choices,
+        default=Status.UNSPECIFIED,
+        blank=True,
+        db_index=True,
+        db_column="status"
+    )
 
-    status = models.CharField(max_length=3, choices=Status.choices,
-                              default=Status.DRAFT, db_index=True)
-    tags = models.ManyToManyField(Tag, null=True)
+    # basic attack
+    basic_attack = models.ForeignKey(
+        to=BasicAttack,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
+
+    # M2M
+    tactics = models.ManyToManyField(Tactic, blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
+    features = models.ManyToManyField(Feature, blank=True)
+    experiences = models.ManyToManyField(
+        Experience,
+        through="AdversaryExperience",
+        related_name="adversaries",
+        blank=True
+    )
+
+    @property
+    def type_value(self):
+        return self.type
+
+    @type_value.setter
+    def type_value(self, value):
+        self.type = self.Type.UNSPECIFIED if value in (None, "") else value
+
+    @property
+    def tier_value(self):
+        return self.tier
+
+    @tier_value.setter
+    def tier_value(self, value):
+        self.tier = self.Tier.UNSPECIFIED if value in (None, "") else value
+
+    @property
+    def status_value(self):
+        return self.status
+
+    @status_value.setter
+    def status_value(self, value):
+        self.status = self.Status.UNSPECIFIED if value in (None, "") else value
 
     class Meta:
         verbose_name_plural = 'Adversaries'
