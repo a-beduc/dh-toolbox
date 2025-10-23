@@ -31,7 +31,8 @@ def test_damage_in_serializer_invalid_type():
     assert not s.is_valid()
     assert s.errors["damage_type"] == [
         ErrorDetail(string="Invalid value 'BAD'. Try one of "
-                           "['PHY', 'PHYSICAL', "
+                           "[None, '', 'UNK', 'UNKNOWN', "
+                           "'PHY', 'PHYSICAL', "
                            "'MAG', 'MAGICAL', "
                            "'BTH', 'BOTH', 'PHY/MAG'].",
                     code='invalid')
@@ -69,14 +70,16 @@ def test_basic_attack_in_serializer_valid_range():
 
 
 def test_basic_attack_in_serializer_invalid_range():
-    s = BasicAttackWriteSerializer(data={"name": "Hit", "range": "UNKNOWN"})
+    s = BasicAttackWriteSerializer(data={"name": "Hit", "range": "WRONG TYPE"})
     assert not s.is_valid()
     assert s.errors['range'] == [
-        ErrorDetail(string="Invalid value 'UNKNOWN'. Try one of "
-                           "['MEL', 'MELEE', "
+        ErrorDetail(string="Invalid value 'WRONG TYPE'. Try one of "
+                           "[None, '', 'UNK', 'UNKNOWN', "
+                           "'MEL', 'MELEE', "
                            "'CLO', 'CLOSE', "
                            "'FAR', "
-                           "'VCL', 'VERY_CLOSE', 'V_CLOSE', 'VCLOSE', "
+                           "'VCL', 'VERY_CLOSE', "
+                           "'V_CLOSE', 'VCLOSE', "
                            "'VFA', 'VERY_FAR', 'V_FAR', 'VFAR'].",
                     code='invalid')
     ]
@@ -112,7 +115,8 @@ def test_feature_in_serializer_invalid_type():
     assert not s.is_valid()
     assert s.errors["type"] == [
         ErrorDetail(string="Invalid value 'Invalid'. Try one of "
-                           "['PAS', 'PASSIVE', "
+                           "[None, '', 'UNK', 'UNKNOWN', "
+                           "'PAS', 'PASSIVE', "
                            "'ACT', 'ACTION', "
                            "'REA', 'REACTION'].",
                     code='invalid')

@@ -78,6 +78,17 @@ def test_sync_m2m_by_name_tags_update_delete(conf_adv):
 
 
 @pytest.mark.django_db
+def test_sync_m2m_by_name_tags_already_in_db_conflict(conf_adv):
+    Tag.objects.create(name="fire")
+    assert Tag.objects.count() == 1
+
+    dtos = [TagDTO(name="fire"), TagDTO(name="desert")]
+    _sync_m2m_by_name(conf_adv.tags, Tag, dtos)
+
+    assert Tag.objects.count() == 2
+
+
+@pytest.mark.django_db
 def test_sync_m2m_by_name_tactics_works(conf_adv):
     assert Tactic.objects.count() == 0
     assert conf_adv.tactics.count() == 0
@@ -246,6 +257,7 @@ def test_sync_experiences_updates_deletes(conf_adv):
     assert Experience.objects.count() == 3
     assert AdversaryExperience.objects.filter(adversary=conf_adv).count() == 2
     assert conf_adv.experiences.count() == 2
+
 
 @pytest.mark.django_db
 def test_sync_experiences_empty_list_clear_links_only(conf_adv):
