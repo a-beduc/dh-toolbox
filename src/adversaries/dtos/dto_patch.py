@@ -1,20 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional, List
 
-
-class _UnsetFlag:
-    """Sentinel class"""
-    __slots__ = ()
-
-    def __bool__(self):
-        return False
-
-
-UNSET = _UnsetFlag()
-
-
-def is_unset(value):
-    return value is UNSET
+from adversaries.helpers.sentinel import UNSET
 
 
 @dataclass(frozen=True, slots=True)

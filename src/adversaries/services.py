@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.db.models import Q
 
-from adversaries.dtos.dto_patch import is_unset
+from adversaries.helpers.sentinel import is_unset
 from adversaries.models import Adversary, Tactic, Tag, Experience, \
     Feature, DamageProfile, BasicAttack, AdversaryExperience, DamageType
 
