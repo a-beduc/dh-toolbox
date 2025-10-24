@@ -1,8 +1,9 @@
 from django.db import transaction
 from django.db.models import Q
 
+from adversaries.dtos.dto_patch import is_unset
 from adversaries.models import Adversary, Tactic, Tag, Experience, \
-    Feature, DamageProfile, BasicAttack, AdversaryExperience
+    Feature, DamageProfile, BasicAttack, AdversaryExperience, DamageType
 
 
 def _remove_none_field(d):
@@ -176,7 +177,7 @@ def put_adversary(adv, dto):
     adv = Adversary.objects.select_for_update().get(pk=adv.pk)
 
     # --- Simple attributes --- #
-    adv.name = dto.name if dto.name else adv.name
+    adv.name = dto.name
     adv.tier_value = dto.tier
     adv.type_value = dto.type
     adv.description = dto.description
@@ -222,4 +223,122 @@ def put_adversary(adv, dto):
     adv.full_clean()
     adv.save()
 
+    return adv
+
+
+def _resolve_damage_profile(existing_dp, dto):
+    if is_unset(dto):
+        return existing_dp
+
+    if dto is None:
+        return None
+
+    dice_number = getattr(existing_dp, "dice_number", None)
+    dice_type = getattr(existing_dp, "dice_type", None)
+    bonus = getattr(existing_dp, "bonus", None)
+    damage_type = getattr(existing_dp, "damage_type", None)
+
+    if not is_unset(dto.dice_number):
+        dice_number = dto.dice_number
+    if not is_unset(dto.dice_type):
+        dice_type = dto.dice_type
+    if not is_unset(dto.bonus):
+        bonus = dto.bonus
+    if not is_unset(dto.damage_type):
+        damage_type = DamageType(dto.damage_type) \
+            if dto.damage_type is not None else None
+
+    if (dice_number is None
+            and dice_type is None
+            and bonus is None
+            and damage_type is None):
+        return None
+
+    dp_kwargs = _remove_none_field({
+        "dice_number": dice_number,
+        "dice_type": dice_type,
+        "bonus": bonus,
+        "damage_type": damage_type,
+    })
+    dp, _ = DamageProfile.objects.get_or_create(**dp_kwargs)
+
+    return dp
+
+
+def _resolve_basic_attack(existing_ba, dto):
+    if is_unset(dto):
+        return existing_ba
+
+    if dto is None:
+        return None
+
+    name = getattr(existing_ba, "name", None)
+    range_ba = getattr(existing_ba, "range", None)
+    damage = getattr(existing_ba, "damage", None)
+
+    if not is_unset(dto.name):
+        name = dto.name
+    if not is_unset(dto.range):
+        range_ba = dto.range
+    damage = _resolve_damage_profile(damage, dto.damage)
+
+    if (name, range_ba, damage) == (None, None, None):
+        return None
+
+    ba_kwargs = _remove_none_field({
+        "name": name,
+        "range": range_ba,
+        "damage": damage,
+    })
+    ba_obj, _ = BasicAttack.objects.get_or_create(**ba_kwargs)
+
+    return ba_obj
+
+
+@transaction.atomic
+def patch_adversary(adv, dto):
+    adv = Adversary.objects.select_for_update().get(pk=adv.pk)
+
+    simple_attr_map = {
+        "name": "name",
+        "tier": "tier_value",
+        "type": "type_value",
+        "description": "description",
+        "difficulty": "difficulty",
+        "threshold_major": "threshold_major",
+        "threshold_severe": "threshold_severe",
+        "hit_point": "hit_point",
+        "horde_hit_point": "horde_hit_point",
+        "stress_point": "stress_point",
+        "atk_bonus": "atk_bonus",
+        "source": "source",
+        "status": "status_value"
+    }
+
+    # --- Simple attributes --- #
+    for attr in simple_attr_map:
+        value = getattr(dto, attr)
+        if not is_unset(value):
+            setattr(adv, simple_attr_map[attr], value)
+
+    # --- Basic attack --- #
+    if not is_unset(dto.basic_attack):
+        adv.basic_attack = _resolve_basic_attack(adv.basic_attack,
+                                                 dto.basic_attack)
+
+    # --- M2M --- #
+    if not is_unset(dto.tactics):
+        _sync_m2m_by_name(adv.tactics, Tactic, dto.tactics)
+
+    if not is_unset(dto.tags):
+        _sync_m2m_by_name(adv.tags, Tag, dto.tags)
+
+    if not is_unset(dto.experiences):
+        _sync_experiences(adv, dto.experiences)
+
+    if not is_unset(dto.features):
+        _sync_features(adv.features, dto.features)
+
+    adv.full_clean()
+    adv.save()
     return adv

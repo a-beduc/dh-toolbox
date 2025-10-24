@@ -3,9 +3,13 @@ from django.db import IntegrityError
 
 from adversaries.dtos.dto import AdversaryDTO, BasicAttackDTO, DamageDTO, \
     TacticDTO, TagDTO, ExperienceDTO, FeatureDTO
+from adversaries.dtos.dto_patch import AdversaryPatchDTO, TagPatchDTO, \
+    TacticPatchDTO, FeaturePatchDTO, ExperiencePatchDTO, BasicAttackPatchDTO, \
+    DamagePatchDTO
 from adversaries.models import Adversary, DamageProfile, BasicAttack, Tactic, \
     Tag, Experience, Feature, DamageType, AdversaryExperience
-from adversaries.services import create_adversary, put_adversary
+from adversaries.services import create_adversary, put_adversary, \
+    patch_adversary
 
 
 @pytest.fixture
@@ -381,3 +385,223 @@ def test_put_adversary_overwrite_nested_and_m2m(conf_account,
     assert Tag.objects.count() == 3
     assert Tactic.objects.count() == 3
     assert Experience.objects.count() == 3
+
+
+# --- PATCH TESTS --- #
+@pytest.mark.django_db
+def test_patch_adversary_minimal(conf_account):
+    # Seed
+    adv = Adversary.objects.create(name="Goblin", author_id=conf_account.id)
+    assert adv.name == "Goblin"
+
+    dto = AdversaryPatchDTO(name="Dragon")
+    updated = patch_adversary(adv, dto)
+
+    assert updated.pk == adv.pk
+    assert updated.name == "Dragon"
+    assert updated.tier == Adversary.Tier.UNSPECIFIED
+    assert updated.description is None
+    assert updated.basic_attack is None
+    assert updated.tactics.count() == 0
+    assert updated.tags.count() == 0
+    assert updated.experiences.count() == 0
+    assert updated.features.count() == 0
+
+
+@pytest.mark.django_db
+def test_patch_forgotten_fields_are_ignored_and_none_clears(conf_account,
+                                                            dummy_dto_package):
+    dto = AdversaryDTO(author_id=conf_account.id, **dummy_dto_package)
+    adv = create_adversary(dto)
+
+    assert adv.source == "Darrington Press"
+    assert adv.tier == 1
+    assert adv.type == "SOL"
+
+    patch = AdversaryPatchDTO(
+        description="Now smells like ozone",
+        source=None,
+    )
+    updated = patch_adversary(adv, patch)
+
+    assert updated.description == "Now smells like ozone"
+    assert updated.source is None
+    assert updated.tier == 1
+    assert updated.type == "SOL"
+
+
+@pytest.mark.django_db
+def test_patch_m2m_replace_ignore_and_clear(conf_account, dummy_dto_package):
+    dto = AdversaryDTO(author_id=conf_account.id, **dummy_dto_package)
+    adv = create_adversary(dto)
+
+    # forgotten field are untouched
+    p1 = AdversaryPatchDTO(
+        name="Ashen Tyrant II",
+    )
+    adv = patch_adversary(adv, p1)
+    assert adv.name == "Ashen Tyrant II"
+    assert set(adv.tags.values_list("name", flat=True)) == {"fire", "desert"}
+    assert set(adv.tactics.values_list("name", flat=True)) == {"Flank",
+                                                               "Ambush"}
+    assert set(adv.features.values_list("name", "type", "description")) == {
+        ("Relentless", Feature.Type.PASSIVE, "Act twice"),
+        ("Spit Acid", Feature.Type.ACTION, "Cone"),
+    }
+    exp_pairs = set(
+        AdversaryExperience.objects.filter(adversary=adv)
+        .select_related("experience")
+        .values_list("experience__name", "bonus")
+    )
+    assert exp_pairs == {("Burrow", 2), ("Flank", 3)}
+
+    # replace
+    p2 = AdversaryPatchDTO(
+        tags=[TagPatchDTO(name="ash"), TagPatchDTO(name="ember")],
+        tactics=[TacticPatchDTO(name="Ambush"), TacticPatchDTO(name="Charge")],
+        features=[
+            FeaturePatchDTO(name="Tail Swipe", type="ACT", description="Line"),
+            FeaturePatchDTO(name="Relentless", type="PAS",
+                            description="Act twice"),
+        ],
+        experiences=[
+            ExperiencePatchDTO(name="Flank", bonus=5),
+            ExperiencePatchDTO(name="Tunnel", bonus=1),
+        ],
+    )
+    adv = patch_adversary(adv, p2)
+    assert set(adv.tags.values_list("name", flat=True)) == {"ash", "ember"}
+    assert set(adv.tactics.values_list("name", flat=True)) == {"Ambush",
+                                                               "Charge"}
+    assert set(adv.features.values_list("name", "type", "description")) == {
+        ("Tail Swipe", Feature.Type.ACTION, "Line"),
+        ("Relentless", Feature.Type.PASSIVE, "Act twice"),
+    }
+    exp_pairs = set(
+        AdversaryExperience.objects.filter(adversary=adv)
+        .select_related("experience")
+        .values_list("experience__name", "bonus")
+    )
+    assert exp_pairs == {("Flank", 5), ("Tunnel", 1)}
+
+    # empty list clears the fields
+    p3 = AdversaryPatchDTO(tags=[], tactics=[], features=[], experiences=[])
+    adv = patch_adversary(adv, p3)
+    assert adv.tags.count() == 0
+    assert adv.tactics.count() == 0
+    assert adv.features.count() == 0
+    assert AdversaryExperience.objects.filter(adversary=adv).count() == 0
+
+    # resource remains, only link are cleared
+    assert Tag.objects.count() >= 2
+    assert Tactic.objects.count() >= 2
+    assert Feature.objects.count() >= 2
+    assert Experience.objects.count() >= 2
+
+
+@pytest.mark.django_db
+def test_patch_basic_attack_crud_and_partial(conf_account):
+    # Seed without BA
+    adv = Adversary.objects.create(name="Wasp", author_id=conf_account.id)
+    assert adv.basic_attack is None
+    assert BasicAttack.objects.count() == 0
+    assert DamageProfile.objects.count() == 0
+
+    # Create BA with damage
+    p1 = AdversaryPatchDTO(
+        basic_attack=BasicAttackPatchDTO(
+            name="Sting",
+            range="Close",
+            damage=DamagePatchDTO(dice_number=2, dice_type=4, bonus=1,
+                                  damage_type="MAG")
+        )
+    )
+    adv = patch_adversary(adv, p1)
+    assert adv.basic_attack is not None
+    ba = adv.basic_attack
+    assert (ba.name, ba.range) == ("Sting", "Close")
+    dp = ba.damage
+    assert (dp.dice_number, dp.dice_type, dp.bonus, dp.damage_type) == (
+        2, 4, 1, DamageType.MAGICAL)
+
+    # Partial BA update
+    p2 = AdversaryPatchDTO(
+        basic_attack=BasicAttackPatchDTO(name="Impale")
+    )
+    adv = patch_adversary(adv, p2)
+    assert BasicAttack.objects.count() == 2
+
+    assert adv.basic_attack_id == 2
+    assert adv.basic_attack.name == "Impale"
+
+    dp2 = adv.basic_attack.damage
+    assert dp2.pk == 1
+    assert (dp2.dice_number, dp2.dice_type, dp2.bonus, dp2.damage_type) == (
+        2, 4, 1, DamageType.MAGICAL)
+
+    # Partial DAMAGE update
+    p3 = AdversaryPatchDTO(
+        basic_attack=BasicAttackPatchDTO(
+            damage=DamagePatchDTO(bonus=3)
+        )
+    )
+    adv = patch_adversary(adv, p3)
+    dp3 = adv.basic_attack.damage
+    # Update DamageProfile created a new row
+    assert dp3.pk == 2
+    assert (dp3.dice_number, dp3.dice_type, dp3.bonus, dp3.damage_type) == (
+        2, 4, 3, DamageType.MAGICAL)
+
+    # Clear BA
+    p4 = AdversaryPatchDTO(basic_attack=None)
+    adv = patch_adversary(adv, p4)
+    assert adv.basic_attack is None
+
+    # resource remains, only link are cleared
+    assert BasicAttack.objects.count() >= 1
+    assert DamageProfile.objects.count() >= 1
+
+
+@pytest.mark.django_db
+def test_patch_update_basic_attack_profile_reuse_basic_attack(conf_account):
+    # Seed without BA
+    adv = Adversary.objects.create(name="Wasp", author_id=conf_account.id)
+    assert adv.basic_attack is None
+    assert BasicAttack.objects.count() == 0
+    assert DamageProfile.objects.count() == 0
+
+    # Create BA with BA (create new BA)
+    p1 = AdversaryPatchDTO(
+        basic_attack=BasicAttackPatchDTO(
+            name="Sting",
+            range="Close",
+            damage=DamagePatchDTO(dice_number=2, dice_type=4, bonus=1,
+                                  damage_type="MAG")
+        )
+    )
+    adv = patch_adversary(adv, p1)
+    assert BasicAttack.objects.count() == 1
+
+    # Update BA (create new BA)
+    p2 = AdversaryPatchDTO(
+        basic_attack=BasicAttackPatchDTO(
+            name="Sting",
+            range="Close",
+            damage=DamagePatchDTO(dice_number=1, dice_type=6, bonus=1,
+                                  damage_type="MAG")
+        )
+    )
+    adv = patch_adversary(adv, p2)
+    assert BasicAttack.objects.count() == 2
+
+    # Update BA (Reuse first BA created)
+    p3 = AdversaryPatchDTO(
+        basic_attack=BasicAttackPatchDTO(
+            name="Sting",
+            range="Close",
+            damage=DamagePatchDTO(dice_number=1, dice_type=6, bonus=1,
+                                  damage_type="MAG")
+        )
+    )
+    patch_adversary(adv, p3)
+    assert BasicAttack.objects.count() == 2
