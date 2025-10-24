@@ -169,3 +169,57 @@ def _sync_features(m2m_manager, dtos):
         }
 
     m2m_manager.set([existing[k] for k in keys])
+
+
+@transaction.atomic
+def put_adversary(adv, dto):
+    adv = Adversary.objects.select_for_update().get(pk=adv.pk)
+
+    # --- Simple attributes --- #
+    adv.name = dto.name if dto.name else adv.name
+    adv.tier_value = dto.tier
+    adv.type_value = dto.type
+    adv.description = dto.description
+    adv.difficulty = dto.difficulty
+    adv.threshold_major = dto.threshold_major
+    adv.threshold_severe = dto.threshold_severe
+    adv.hit_point = dto.hit_point
+    adv.horde_hit_point = dto.horde_hit_point
+    adv.stress_point = dto.stress_point
+    adv.atk_bonus = dto.atk_bonus
+    adv.source = dto.source
+    adv.status_value = dto.status
+
+    # --- Basic Attack --- #
+    if dto.basic_attack is None:
+        adv.basic_attack = None
+    else:
+        ba = dto.basic_attack
+        dp_obj = None
+
+        if ba.damage is not None:
+            d = ba.damage
+            dp_obj, _ = DamageProfile.objects.get_or_create(
+                dice_number=d.dice_number,
+                dice_type=d.dice_type,
+                bonus=d.bonus,
+                damage_type=d.damage_type
+            )
+
+        ba_obj, _ = BasicAttack.objects.get_or_create(
+            name=ba.name,
+            range=ba.range,
+            damage=dp_obj
+        )
+        adv.basic_attack = ba_obj
+
+    # --- M2M --- #
+    _sync_m2m_by_name(adv.tags, Tag, dto.tags)
+    _sync_m2m_by_name(adv.tactics, Tactic, dto.tactics)
+    _sync_features(adv.features, dto.features)
+    _sync_experiences(adv, dto.experiences)
+
+    adv.full_clean()
+    adv.save()
+
+    return adv
