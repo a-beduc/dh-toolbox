@@ -6,12 +6,12 @@ from rest_framework.serializers import Serializer, IntegerField, \
     CharField
 
 from accounts.models import Account
-from adversaries.dto import DamageDTO, BasicAttackDTO, AdversaryDTO, \
+from adversaries.dtos.dto import DamageDTO, BasicAttackDTO, AdversaryDTO, \
     TacticDTO, TagDTO, ExperienceDTO, FeatureDTO
 from adversaries.helpers.formatting import format_basic_attack, \
     format_csv_name, format_csv_experience
 from adversaries.helpers.normalizers import normalize_choices
-from adversaries.models import Experience, Adversary, DamageProfile, \
+from adversaries.models import Adversary, DamageProfile, \
     BasicAttack, AdversaryExperience, Feature
 from adversaries.services import create_adversary
 
@@ -252,3 +252,28 @@ class AdversaryWriteSerializer(Serializer):
         )
 
         return create_adversary(dto)
+
+
+
+
+
+# class AdversaryPatchSerializer(Serializer):
+#     name = CharField(required=False, allow_null=True)
+#     tier = CharField(required=False, allow_null=True)
+#     type = CharField(required=False, allow_null=True)
+#     description = CharField(required=False, allow_null=True)
+#     difficulty = IntegerField(required=False, allow_null=True, min_value=0, write_only=True)
+#     threshold_major = IntegerField(required=False, allow_null=True, min_value=0)
+#     threshold_severe = IntegerField(required=False, allow_null=True, min_value=0)
+#     hit_point = IntegerField(required=False, allow_null=True, min_value=0)
+#     horde_hit_point = IntegerField(required=False, allow_null=True, min_value=0)
+#     stress_point = IntegerField(required=False, allow_null=True, min_value=0)
+#     atk_bonus = IntegerField(required=False, allow_null=True)
+#     source = CharField(required=False, allow_null=True)
+#     status = CharField(required=False, allow_null=True)
+#
+#     basic_attack = BasicAttackPatchSerializer(required=False, allow_null=True)
+#     tactics = ListField(child=CharField(), required=False, write_only=True)
+#     tags = ListField(child=CharField(), required=False, write_only=True)
+#     experiences = ExperienceWriteSerializer(many=True, required=False, write_only=True)
+#     features = FeatureWriteSerializer(many=True, required=False, write_only=True)

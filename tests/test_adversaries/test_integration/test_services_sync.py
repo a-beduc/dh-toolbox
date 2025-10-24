@@ -1,7 +1,7 @@
 import pytest
 from django.db import IntegrityError, transaction
 
-from adversaries.dto import TagDTO, TacticDTO, FeatureDTO, ExperienceDTO
+from adversaries.dtos.dto import TagDTO, TacticDTO, FeatureDTO, ExperienceDTO
 from adversaries.models import Tag, Tactic, Feature, Experience, \
     AdversaryExperience
 from adversaries.services import _sync_m2m_by_name, _sync_features, \

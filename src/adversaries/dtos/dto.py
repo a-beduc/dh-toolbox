@@ -63,4 +63,3 @@ class AdversaryDTO:
     features: List["FeatureDTO"] = field(default_factory=list)
     tags: List["TagDTO"] = field(default_factory=list)
 
-

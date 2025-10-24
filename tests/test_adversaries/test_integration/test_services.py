@@ -1,7 +1,7 @@
 import pytest
 from django.db import IntegrityError
 
-from adversaries.dto import AdversaryDTO, BasicAttackDTO, DamageDTO, \
+from adversaries.dtos.dto import AdversaryDTO, BasicAttackDTO, DamageDTO, \
     TacticDTO, TagDTO, ExperienceDTO, FeatureDTO
 from adversaries.models import Adversary, DamageProfile, BasicAttack, Tactic, \
     Tag, Experience, Feature, DamageType, AdversaryExperience
