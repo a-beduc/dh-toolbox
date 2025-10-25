@@ -1,16 +1,25 @@
 from django.contrib import admin
 
 from adversaries.models import Adversary, BasicAttack, DamageProfile, \
-    Experience, Feature, Tactic
+    Experience, Feature, Tactic, AdversaryExperience, Tag
+
+
+class AdversaryExperienceInline(admin.TabularInline):
+    """
+    https://docs.djangoproject.com/en/5.2/ref/contrib/admin/
+    #working-with-many-to-many-intermediary-models
+    """
+    model = AdversaryExperience
+    extra = 1
 
 
 @admin.register(Adversary)
 class AdversaryAdmin(admin.ModelAdmin):
-    pass
+    inlines = [AdversaryExperienceInline]
 
 
 @admin.register(BasicAttack)
-class BasicAttack(admin.ModelAdmin):
+class BasicAttackAdmin(admin.ModelAdmin):
     pass
 
 
@@ -31,4 +40,9 @@ class FeatureAdmin(admin.ModelAdmin):
 
 @admin.register(Tactic)
 class TacticAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
     pass

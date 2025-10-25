@@ -1,7 +1,7 @@
 import pytest
 from django.core.exceptions import ValidationError as Django_ValidationError
-from django.db import IntegrityError as Django_IntegrityError
 from django.db.models.deletion import ProtectedError as Django_ProtectedError
+from django.db.utils import IntegrityError as Django_IntegrityError
 
 from adversaries.models import Tactic, DamageProfile, DamageType, BasicAttack, \
     Experience, Feature, Adversary
@@ -36,7 +36,7 @@ def test_damage_profile_defaults():
     assert dp.dice_number == 0
     assert dp.dice_type == 0
     assert dp.bonus == 0
-    assert dp.damage_type == DamageType.PHYSICAL
+    assert dp.damage_type == DamageType.UNSPECIFIED
 
 
 @pytest.mark.django_db
@@ -118,52 +118,42 @@ def test_damage_type_choices_is_valid():
 
 # --- BASIC ATTACK TESTS --- #
 @pytest.mark.django_db
-def test_basic_attack_unique_entity(flat_dp):
-    BasicAttack.objects.create(name="Dagger", damage=flat_dp)
+def test_basic_attack_unique_entity(conf_flat_dp):
+    BasicAttack.objects.create(name="Dagger", damage=conf_flat_dp)
     with pytest.raises(Django_IntegrityError):
-        BasicAttack.objects.create(name="Dagger", damage=flat_dp)
+        BasicAttack.objects.create(name="Dagger", damage=conf_flat_dp)
 
 
 @pytest.mark.django_db
-def test_basic_attack_default_values(flat_dp, roll_dp):
-    flat = BasicAttack.objects.create(name="Flat", damage=flat_dp)
-    roll = BasicAttack.objects.create(name="Roll", damage=roll_dp)
+def test_basic_attack_default_values(conf_flat_dp, conf_roll_dp):
+    flat = BasicAttack.objects.create(name="Flat", damage=conf_flat_dp)
+    roll = BasicAttack.objects.create(name="Roll",
+                                      damage=conf_roll_dp,
+                                      range="VFA")
 
-    assert flat.range == "MELEE"
-    assert roll.range == "MELEE"
+    assert flat.range == BasicAttack.Range.UNSPECIFIED
+    assert roll.range == BasicAttack.Range.VERY_FAR
 
 
 @pytest.mark.django_db
-def test_basic_attack_fk_protect(basic_attack):
+def test_basic_attack_fk_protect(conf_basic_attack):
     """You can't delete a DamageProfile entity that is used by at least
     one BasicAttack"""
-    dp = basic_attack.damage
+    dp = conf_basic_attack.damage
     with pytest.raises(Django_ProtectedError):
         dp.delete()
 
     # need to remove the BasicAttack before deleting the DamageProfile
-    basic_attack.delete()
+    conf_basic_attack.delete()
     dp.delete()
 
 
 # --- EXPERIENCE TESTS --- #
 @pytest.mark.django_db
 def test_experience_unique_entity():
-    Experience.objects.create(name="Keen Senses", bonus=3)
+    Experience.objects.create(name="Keen Senses")
     with pytest.raises(Django_IntegrityError):
-        Experience.objects.create(name="Keen Senses", bonus=3)
-
-
-@pytest.mark.django_db
-def test_experience_same_name_different_bonus():
-    Experience.objects.create(name="Keen Senses", bonus=3)
-    Experience.objects.create(name="Keen Senses", bonus=2)
-    assert Experience.objects.count() == 2
-
-
-@pytest.mark.django_db
-def test_experience_negative_bonus():
-    Experience.objects.create(name="Keen Senses", bonus=-3)
+        Experience.objects.create(name="Keen Senses")
 
 
 # --- FEATURE TESTS --- #
@@ -181,19 +171,22 @@ def test_feature_type_choices_validation():
 
 # --- ADVERSARY TESTS --- #
 @pytest.mark.django_db
-def test_adversary_defaults_and_relations(basic_attack):
-    adv = Adversary.objects.create(name="Burrower", basic_attack=basic_attack)
+def test_adversary_defaults_and_relations(conf_basic_attack, conf_account):
+    adv = Adversary.objects.create(name="Burrower",
+                                   basic_attack=conf_basic_attack,
+                                   author=conf_account)
 
-    assert adv.tier == Adversary.Tier.ONE
-    assert adv.type == Adversary.Type.STANDARD
+    assert adv.tier == Adversary.Tier.UNSPECIFIED
+    assert adv.type == Adversary.Type.UNSPECIFIED
 
     t1 = Tactic.objects.create(name="Ambush")
     t2 = Tactic.objects.create(name="Flank")
     adv.tactics.add(t1, t2)
 
-    e1 = Experience.objects.create(name="Keen Senses", bonus=3)
-    e2 = Experience.objects.create(name="Relentless", bonus=1)
-    adv.experiences.add(e1, e2)
+    e1 = Experience.objects.create(name="Keen Senses")
+    e2 = Experience.objects.create(name="Relentless")
+    adv.add_experience(e1, bonus=3)
+    adv.add_experience(e2, bonus=-4)
 
     f1 = Feature.objects.create(name="Earth Eruption",
                                 type=Feature.Type.ACTION)
@@ -204,3 +197,29 @@ def test_adversary_defaults_and_relations(basic_attack):
     assert adv.tactics.count() == 2
     assert adv.experiences.count() == 2
     assert adv.features.count() == 1
+
+
+@pytest.mark.django_db
+def test_adversary_minimum_data(conf_account):
+    adv = Adversary.objects.create(name="Minimal", author=conf_account)
+    assert adv.pk is not None
+
+
+@pytest.mark.django_db
+def test_adversary_missing_name_fails(conf_account):
+    with pytest.raises(Django_IntegrityError):
+        Adversary.objects.create(author=conf_account)
+
+
+@pytest.mark.django_db
+def test_adversary_missing_author_fails():
+    with pytest.raises(Django_IntegrityError):
+        Adversary.objects.create(name="Minimal")
+
+
+@pytest.mark.django_db
+def test_adversary_repeated_name_author_fails(conf_account):
+    adv = Adversary.objects.create(name="Minimal", author=conf_account)
+    assert adv.pk is not None
+    with pytest.raises(Django_IntegrityError):
+        Adversary.objects.create(name="Minimal", author=conf_account)

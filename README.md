@@ -41,6 +41,9 @@
   * [ ] Filtering
   * [ ] Sorting
   * [ ] Panels
+* [ ] Db storage
+  * [ ] use postgreSQL
+  * [ ] Add garbage collector (grace period 30day)
 
 # dh-toolbox
 
