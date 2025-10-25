@@ -2,7 +2,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from adversaries.models import Adversary
 from api.v1.adversaries.serializers import AdversaryReadSerializer, \
-    AdversaryWriteSerializer, AdversaryListSerializer
+    AdversaryWriteSerializer, AdversaryListSerializer, AdversaryPatchSerializer
 
 
 class AdversaryViewSet(ModelViewSet):
@@ -14,7 +14,8 @@ class AdversaryViewSet(ModelViewSet):
         "update": AdversaryWriteSerializer,
         "retrieve": AdversaryReadSerializer,
         "list": AdversaryListSerializer,
-        "partial_update": AdversaryWriteSerializer,
+        "partial_update": AdversaryPatchSerializer,
+        "destroy": AdversaryReadSerializer,
     }
 
     def get_serializer_class(self):
