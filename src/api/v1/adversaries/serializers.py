@@ -13,7 +13,7 @@ from adversaries.helpers.formatting import format_basic_attack, \
 from adversaries.helpers.normalizers import normalize_choices
 from adversaries.models import Adversary, DamageProfile, \
     BasicAttack, AdversaryExperience, Feature
-from adversaries.services import create_adversary
+from adversaries.services import create_adversary, put_adversary
 
 
 class DamageProfileReadNestedSerializer(ModelSerializer):
@@ -136,6 +136,10 @@ class DamageWriteSerializer(Serializer):
     def validate_damage_type(self, value):
         return normalize_choices(value, "DMG_TYPE")
 
+    @staticmethod
+    def to_dto(data):
+        return DamageDTO(**data)
+
 
 class BasicAttackWriteSerializer(Serializer):
     name = CharField(required=False, allow_null=True)
@@ -145,10 +149,26 @@ class BasicAttackWriteSerializer(Serializer):
     def validate_range(self, value):
         return normalize_choices(value, "BA_RANGE")
 
+    @staticmethod
+    def to_dto(data):
+        dmg = data.get("damage")
+        dmg_dto = None
+        if dmg:
+            dmg_dto = DamageWriteSerializer.to_dto(dmg)
+        return BasicAttackDTO(
+            name=data["name"],
+            range=data.get("range"),
+            damage=dmg_dto
+        )
+
 
 class ExperienceWriteSerializer(Serializer):
     name = CharField()
     bonus = IntegerField(required=False, allow_null=True)
+
+    @staticmethod
+    def to_dto(data):
+        return ExperienceDTO(name=data["name"], bonus=data.get("bonus"))
 
 
 class FeatureWriteSerializer(Serializer):
@@ -158,6 +178,14 @@ class FeatureWriteSerializer(Serializer):
 
     def validate_type(self, value):
         return normalize_choices(value, "FEAT_TYPE")
+
+    @staticmethod
+    def to_dto(data):
+        return FeatureDTO(
+            name=data["name"],
+            type=data.get("type"),
+            description=data.get("description")
+        )
 
 
 class AdversaryWriteSerializer(Serializer):
@@ -200,35 +228,26 @@ class AdversaryWriteSerializer(Serializer):
     def validate_status(self, value):
         return normalize_choices(value, "ADV_STATUS")
 
-    def create(self, validated):
-        request = self.context.get("request")
-        if not request:
-            raise ValidationError({"detail": "Missing user in request payload."})
-        try:
-            author_id = request.user.id
-        except AttributeError:
-            raise ValidationError({"detail": "Current user has no linked "
-                                             "account."})
-
+    def _build_dto(self, validated, *, author_id=None):
         ba_dto = None
         if validated.get("basic_attack"):
-            ba = validated["basic_attack"]
-            dmg_dto = None
-            if ba.get("damage"):
-                d = ba["damage"]
-                dmg_dto = DamageDTO(
-                    dice_number=d.get("dice_number"),
-                    dice_type=d.get("dice_type"),
-                    bonus=d.get("bonus"),
-                    damage_type=d.get("damage_type")
-                )
-            ba_dto = BasicAttackDTO(
-                name=ba["name"],
-                range=ba.get("range"),
-                damage=dmg_dto
-            )
+            ba_dto = (BasicAttackWriteSerializer
+                      .to_dto(validated["basic_attack"]))
 
-        dto = AdversaryDTO(
+        experiences = [
+            ExperienceWriteSerializer.to_dto(e)
+            for e in validated.get("experiences", [])
+        ]
+
+        features = [
+            FeatureWriteSerializer.to_dto(f)
+            for f in validated.get("features", [])
+        ]
+
+        tactics = [TacticDTO(name=s) for s in validated.get("tactics", [])]
+        tags = [TagDTO(name=s) for s in validated.get("tags", [])]
+
+        return AdversaryDTO(
             author_id=author_id,
             name=validated["name"],
             tier=validated.get("tier"),
@@ -244,17 +263,28 @@ class AdversaryWriteSerializer(Serializer):
             source=validated.get("source"),
             status=validated.get("status"),
             basic_attack=ba_dto,
-            tactics=[TacticDTO(name=s) for s in validated.get("tactics", [])],
-            tags=[TagDTO(name=s) for s in validated.get("tags", [])],
-            experiences=[ExperienceDTO(**e) for e in
-                         validated.get("experiences", [])],
-            features=[FeatureDTO(**f) for f in validated.get("features", [])],
+            tactics=tactics,
+            tags=tags,
+            experiences=experiences,
+            features=features,
         )
 
+    def create(self, validated):
+        request = self.context.get("request")
+        if not request:
+            raise ValidationError({"detail": "Missing user in request payload."})
+        try:
+            author_id = request.user.id
+        except AttributeError:
+            raise ValidationError({"detail": "Current user has no linked "
+                                             "account."})
+
+        dto = self._build_dto(validated, author_id=author_id)
         return create_adversary(dto)
 
-
-
+    def update(self, instance, validated):
+        dto = self._build_dto(validated)
+        return put_adversary(instance, dto)
 
 
 # class AdversaryPatchSerializer(Serializer):
