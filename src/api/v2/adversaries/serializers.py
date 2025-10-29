@@ -16,8 +16,8 @@ from adversaries.helpers.formatting import format_basic_attack, \
 from adversaries.helpers.normalizers import normalize_choices
 from adversaries.models import Adversary, DamageProfile, \
     BasicAttack, AdversaryExperience, Feature
-from adversaries.services import create_adversary, put_adversary, \
-    patch_adversary
+from adversaries.services import adversary_create, adversary_update, \
+    adversary_partial_update
 from api.v1.helpers.sentinel import get_or_unset, present
 
 
@@ -288,11 +288,11 @@ class AdversaryWriteSerializer(Serializer):
                                              "account."})
 
         dto = self._build_dto(validated, author_id=author_id)
-        return create_adversary(dto)
+        return adversary_create(dto)
 
     def update(self, instance, validated):
         dto = self._build_dto(validated)
-        return put_adversary(instance, dto)
+        return adversary_update(instance, dto)
 
 
 # --- Serializers for partial update --- #
@@ -464,4 +464,4 @@ class AdversaryPatchSerializer(Serializer):
             features=features
         )
 
-        return patch_adversary(instance, dto)
+        return adversary_partial_update(instance, dto)

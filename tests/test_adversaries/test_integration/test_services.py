@@ -8,8 +8,8 @@ from adversaries.dtos.dto_patch import AdversaryPatchDTO, TagPatchDTO, \
     DamagePatchDTO
 from adversaries.models import Adversary, DamageProfile, BasicAttack, Tactic, \
     Tag, Experience, Feature, DamageType, AdversaryExperience
-from adversaries.services import create_adversary, put_adversary, \
-    patch_adversary
+from adversaries.services import adversary_create, adversary_update, \
+    adversary_partial_update
 
 
 @pytest.fixture
@@ -92,7 +92,7 @@ def test_create_adversary_minimal_default(conf_account):
         name="Goblin"
     )
 
-    adv = create_adversary(dto)
+    adv = adversary_create(dto)
 
     assert Adversary.objects.count() == 1
     assert adv.author == conf_account
@@ -119,7 +119,7 @@ def test_create_adversary_minimal_default(conf_account):
 @pytest.mark.django_db
 def test_create_adversary_with_nested_and_m2m(conf_account, dummy_dto_package):
     dto = AdversaryDTO(author_id=conf_account.id, **dummy_dto_package)
-    adv = create_adversary(dto)
+    adv = adversary_create(dto)
 
     # simple fields
     assert adv.author == conf_account
@@ -187,7 +187,7 @@ def test_rollback_on_invalid_damage_constraint(conf_account):
     )
 
     with pytest.raises(IntegrityError):
-        create_adversary(dto)
+        adversary_create(dto)
 
     assert Adversary.objects.count() == 0
     assert DamageProfile.objects.count() == 0
@@ -210,7 +210,7 @@ def test_put_adversary_minimal_default(conf_account):
         name="Dragon"
     )
     adv_get = Adversary.objects.get(pk=1)
-    adv = put_adversary(adv_get, dto)
+    adv = adversary_update(adv_get, dto)
 
     assert Adversary.objects.count() == 1
     assert adv.author == conf_account
@@ -238,7 +238,7 @@ def test_put_adversary_minimal_default(conf_account):
 def test_put_adversary_minimal_reset_data_to_default(conf_account,
                                                      dummy_dto_package):
     dto = AdversaryDTO(author_id=conf_account.id, **dummy_dto_package)
-    create_adversary(dto)
+    adversary_create(dto)
 
     adv_db = list(Adversary.objects.all())
 
@@ -251,7 +251,7 @@ def test_put_adversary_minimal_reset_data_to_default(conf_account,
         name="Dragon"
     )
     adv_get = Adversary.objects.get(pk=1)
-    adv = put_adversary(adv_get, dto)
+    adv = adversary_update(adv_get, dto)
 
     assert Adversary.objects.count() == 1
     assert adv.author == conf_account
@@ -280,7 +280,7 @@ def test_put_adversary_overwrite_nested_and_m2m(conf_account,
                                                 dummy_dto_package):
     # seed
     seed_dto = AdversaryDTO(author_id=conf_account.id, **dummy_dto_package)
-    adv = create_adversary(seed_dto)
+    adv = adversary_create(seed_dto)
 
     assert Adversary.objects.count() == 1
     assert DamageProfile.objects.count() == 1
@@ -336,7 +336,7 @@ def test_put_adversary_overwrite_nested_and_m2m(conf_account,
 
     # PUT
     adv_db = Adversary.objects.get(pk=adv.pk)
-    updated = put_adversary(adv_db, update_dto)
+    updated = adversary_update(adv_db, update_dto)
 
     # simple fields updated
     assert Adversary.objects.count() == 1
@@ -395,7 +395,7 @@ def test_patch_adversary_minimal(conf_account):
     assert adv.name == "Goblin"
 
     dto = AdversaryPatchDTO(name="Dragon")
-    updated = patch_adversary(adv, dto)
+    updated = adversary_partial_update(adv, dto)
 
     assert updated.pk == adv.pk
     assert updated.name == "Dragon"
@@ -412,7 +412,7 @@ def test_patch_adversary_minimal(conf_account):
 def test_patch_forgotten_fields_are_ignored_and_none_clears(conf_account,
                                                             dummy_dto_package):
     dto = AdversaryDTO(author_id=conf_account.id, **dummy_dto_package)
-    adv = create_adversary(dto)
+    adv = adversary_create(dto)
 
     assert adv.source == "Darrington Press"
     assert adv.tier == 1
@@ -422,7 +422,7 @@ def test_patch_forgotten_fields_are_ignored_and_none_clears(conf_account,
         description="Now smells like ozone",
         source=None,
     )
-    updated = patch_adversary(adv, patch)
+    updated = adversary_partial_update(adv, patch)
 
     assert updated.description == "Now smells like ozone"
     assert updated.source is None
@@ -433,13 +433,13 @@ def test_patch_forgotten_fields_are_ignored_and_none_clears(conf_account,
 @pytest.mark.django_db
 def test_patch_m2m_replace_ignore_and_clear(conf_account, dummy_dto_package):
     dto = AdversaryDTO(author_id=conf_account.id, **dummy_dto_package)
-    adv = create_adversary(dto)
+    adv = adversary_create(dto)
 
     # forgotten field are untouched
     p1 = AdversaryPatchDTO(
         name="Ashen Tyrant II",
     )
-    adv = patch_adversary(adv, p1)
+    adv = adversary_partial_update(adv, p1)
     assert adv.name == "Ashen Tyrant II"
     assert set(adv.tags.values_list("name", flat=True)) == {"fire", "desert"}
     assert set(adv.tactics.values_list("name", flat=True)) == {"Flank",
@@ -469,7 +469,7 @@ def test_patch_m2m_replace_ignore_and_clear(conf_account, dummy_dto_package):
             ExperiencePatchDTO(name="Tunnel", bonus=1),
         ],
     )
-    adv = patch_adversary(adv, p2)
+    adv = adversary_partial_update(adv, p2)
     assert set(adv.tags.values_list("name", flat=True)) == {"ash", "ember"}
     assert set(adv.tactics.values_list("name", flat=True)) == {"Ambush",
                                                                "Charge"}
@@ -486,7 +486,7 @@ def test_patch_m2m_replace_ignore_and_clear(conf_account, dummy_dto_package):
 
     # empty list clears the fields
     p3 = AdversaryPatchDTO(tags=[], tactics=[], features=[], experiences=[])
-    adv = patch_adversary(adv, p3)
+    adv = adversary_partial_update(adv, p3)
     assert adv.tags.count() == 0
     assert adv.tactics.count() == 0
     assert adv.features.count() == 0
@@ -516,7 +516,7 @@ def test_patch_basic_attack_crud_and_partial(conf_account):
                                   damage_type="MAG")
         )
     )
-    adv = patch_adversary(adv, p1)
+    adv = adversary_partial_update(adv, p1)
     assert adv.basic_attack is not None
     ba = adv.basic_attack
     assert (ba.name, ba.range) == ("Sting", "Close")
@@ -528,7 +528,7 @@ def test_patch_basic_attack_crud_and_partial(conf_account):
     p2 = AdversaryPatchDTO(
         basic_attack=BasicAttackPatchDTO(name="Impale")
     )
-    adv = patch_adversary(adv, p2)
+    adv = adversary_partial_update(adv, p2)
     assert BasicAttack.objects.count() == 2
 
     assert adv.basic_attack_id == 2
@@ -545,7 +545,7 @@ def test_patch_basic_attack_crud_and_partial(conf_account):
             damage=DamagePatchDTO(bonus=3)
         )
     )
-    adv = patch_adversary(adv, p3)
+    adv = adversary_partial_update(adv, p3)
     dp3 = adv.basic_attack.damage
     # Update DamageProfile created a new row
     assert dp3.pk == 2
@@ -554,7 +554,7 @@ def test_patch_basic_attack_crud_and_partial(conf_account):
 
     # Clear BA
     p4 = AdversaryPatchDTO(basic_attack=None)
-    adv = patch_adversary(adv, p4)
+    adv = adversary_partial_update(adv, p4)
     assert adv.basic_attack is None
 
     # resource remains, only link are cleared
@@ -579,7 +579,7 @@ def test_patch_update_basic_attack_profile_reuse_basic_attack(conf_account):
                                   damage_type="MAG")
         )
     )
-    adv = patch_adversary(adv, p1)
+    adv = adversary_partial_update(adv, p1)
     assert BasicAttack.objects.count() == 1
 
     # Update BA (create new BA)
@@ -591,7 +591,7 @@ def test_patch_update_basic_attack_profile_reuse_basic_attack(conf_account):
                                   damage_type="MAG")
         )
     )
-    adv = patch_adversary(adv, p2)
+    adv = adversary_partial_update(adv, p2)
     assert BasicAttack.objects.count() == 2
 
     # Update BA (Reuse first BA created)
@@ -603,5 +603,5 @@ def test_patch_update_basic_attack_profile_reuse_basic_attack(conf_account):
                                   damage_type="MAG")
         )
     )
-    patch_adversary(adv, p3)
+    adversary_partial_update(adv, p3)
     assert BasicAttack.objects.count() == 2
