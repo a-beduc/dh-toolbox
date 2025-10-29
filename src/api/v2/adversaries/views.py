@@ -32,3 +32,26 @@ class AdversaryListApi(APIView):
                                many=True,
                                context={'request': request}).data
         return Response(data)
+
+
+class AdversaryCreateApi(APIView):
+    serializer = AdversaryCreateIn
+
+    def post(self, request):
+        serializer = self.serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        dto = to_adversary_dto(serializer.validated_data,
+                               author_id=request.user.id)
+        adversary_create(dto)
+
+        return Response(status=status.HTTP_201_CREATED)
+
+
+class AdversaryUpdateApi(APIView):
+    serializer = AdversaryPutIn
+
+
+class AdversaryPartialUpdateApi(APIView):
+    serializer = AdversaryPatchIn
+
