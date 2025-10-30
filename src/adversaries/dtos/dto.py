@@ -43,7 +43,6 @@ class TagDTO:
 @dataclass(frozen=True, slots=True)
 class AdversaryDTO:
     name: str
-    author_id: Optional[int] = None
     tier: Optional[int] = None
     type: Optional[str] = None
     description: Optional[str] = None

@@ -1,33 +1,70 @@
-from rest_framework.viewsets import ModelViewSet
+from django.http import Http404
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from adversaries.models import Adversary
-from api.v1.adversaries.serializers import AdversaryReadSerializer, \
-    AdversaryWriteSerializer, AdversaryListSerializer, AdversaryPatchSerializer
+from adversaries.selectors import adversary_get, adversary_list
+from adversaries.services import adversary_create, adversary_update, \
+    adversary_partial_update
+from api.v1.adversaries.serializers_out import AdversaryDetailOut, \
+    AdversaryListOut
+from api.v1.adversaries.serializers_in import AdversaryCreateIn, \
+    AdversaryPutIn, AdversaryPatchIn
+from api.v1.helpers.mappers import to_adversary_dto, to_adversary_patch_dto
 
 
-class AdversaryViewSet(ModelViewSet):
-    queryset = Adversary.objects.all()
-    serializer_class = AdversaryWriteSerializer
+class AdversaryItemApi(APIView):
+    @staticmethod
+    def _get_adv(adversary_id):
+        adv = adversary_get(adversary_id)
+        if adv is None:
+            raise Http404
+        return adv
 
-    action_serializer_classes = {
-        "create": AdversaryWriteSerializer,
-        "update": AdversaryWriteSerializer,
-        "retrieve": AdversaryReadSerializer,
-        "list": AdversaryListSerializer,
-        "partial_update": AdversaryPatchSerializer,
-        "destroy": AdversaryReadSerializer,
-    }
+    def get(self, request, adversary_id):
+        adv = self._get_adv(adversary_id)
+        data = AdversaryDetailOut(adv, context={"request": request}).data
+        return Response(data)
 
-    def get_serializer_class(self):
-        try:
-            return self.action_serializer_classes[self.action]
-        except (KeyError, AttributeError):
-            return super().get_serializer_class()
+    def put(self, request, adversary_id):
+        adv = self._get_adv(adversary_id)
 
-    def get_queryset(self):
-        return (
-            Adversary.objects
-            .select_related("author", "basic_attack__damage")
-            .prefetch_related("tactics", "tags", "features",
-                              "adversary_experiences__experience")
-        )
+        ser = AdversaryPutIn(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        dto = to_adversary_dto(ser.validated_data)
+        adv = adversary_update(adv, dto)
+
+        data = AdversaryDetailOut(adv, context={"request": request}).data
+        return Response(data, status=status.HTTP_200_OK)
+
+    def patch(self, request, adversary_id):
+        adv = self._get_adv(adversary_id)
+
+        ser = AdversaryPatchIn(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        dto = to_adversary_patch_dto(ser.validated_data)
+        adv = adversary_partial_update(adv, dto)
+
+        data = AdversaryDetailOut(adv, context={"request": request}).data
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class AdversaryCollectionApi(APIView):
+    def get(self, request):
+        adversaries = adversary_list()
+        data = AdversaryListOut(adversaries,
+                                many=True,
+                                context={'request': request}).data
+        return Response(data)
+
+    def post(self, request):
+        ser = AdversaryCreateIn(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        dto = to_adversary_dto(ser.validated_data)
+        adv = adversary_create(dto, author_id=request.user.id)
+
+        data = AdversaryDetailOut(adv, context={"request": request}).data
+        return Response(data, status=status.HTTP_201_CREATED)

@@ -11,7 +11,7 @@ def _remove_none_field(d):
 
 
 @transaction.atomic
-def create_adversary(dto):
+def adversary_create(dto, author_id):
     """TODO: Optimize queries later (less query if possible)"""
     ba_obj = None
     if dto.basic_attack is not None:
@@ -34,7 +34,6 @@ def create_adversary(dto):
         ba_obj, _ = BasicAttack.objects.get_or_create(**ba_kwargs)
 
     adv_kwargs = _remove_none_field({
-        "author_id": dto.author_id,
         "name": dto.name,
         "tier": dto.tier,
         "type": dto.type,
@@ -51,7 +50,7 @@ def create_adversary(dto):
         "status": dto.status,
     })
 
-    adv = Adversary(**adv_kwargs)
+    adv = Adversary(**adv_kwargs, author_id=author_id)
     adv.full_clean()
     adv.save()
 
@@ -173,7 +172,7 @@ def _sync_features(m2m_manager, dtos):
 
 
 @transaction.atomic
-def put_adversary(adv, dto):
+def adversary_update(adv, dto):
     adv = Adversary.objects.select_for_update().get(pk=adv.pk)
 
     # --- Simple attributes --- #
@@ -296,7 +295,7 @@ def _resolve_basic_attack(existing_ba, dto):
 
 
 @transaction.atomic
-def patch_adversary(adv, dto):
+def adversary_partial_update(adv, dto):
     adv = Adversary.objects.select_for_update().get(pk=adv.pk)
 
     simple_attr_map = {

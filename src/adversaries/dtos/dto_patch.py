@@ -44,7 +44,6 @@ class TagPatchDTO:
 
 @dataclass(frozen=True, slots=True)
 class AdversaryPatchDTO:
-    author_id: int = UNSET
     name: str = UNSET
     tier: Optional[int] = UNSET
     type: Optional[str] = UNSET
