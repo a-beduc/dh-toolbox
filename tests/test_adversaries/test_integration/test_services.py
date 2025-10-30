@@ -87,12 +87,9 @@ def dummy_dto_package(
 # --- CREATE TESTS --- #
 @pytest.mark.django_db
 def test_create_adversary_minimal_default(conf_account):
-    dto = AdversaryDTO(
-        author_id=conf_account.id,
-        name="Goblin"
-    )
+    dto = AdversaryDTO(name="Goblin")
 
-    adv = adversary_create(dto)
+    adv = adversary_create(dto, author_id=conf_account.id)
 
     assert Adversary.objects.count() == 1
     assert adv.author == conf_account
@@ -118,8 +115,8 @@ def test_create_adversary_minimal_default(conf_account):
 
 @pytest.mark.django_db
 def test_create_adversary_with_nested_and_m2m(conf_account, dummy_dto_package):
-    dto = AdversaryDTO(author_id=conf_account.id, **dummy_dto_package)
-    adv = adversary_create(dto)
+    dto = AdversaryDTO(**dummy_dto_package)
+    adv = adversary_create(dto, author_id=conf_account.id)
 
     # simple fields
     assert adv.author == conf_account
@@ -177,7 +174,6 @@ def test_create_adversary_with_nested_and_m2m(conf_account, dummy_dto_package):
 @pytest.mark.django_db
 def test_rollback_on_invalid_damage_constraint(conf_account):
     dto = AdversaryDTO(
-        author_id=conf_account.id,
         name="Bad Damage",
         basic_attack=BasicAttackDTO(
             name="Weird",
@@ -187,7 +183,7 @@ def test_rollback_on_invalid_damage_constraint(conf_account):
     )
 
     with pytest.raises(IntegrityError):
-        adversary_create(dto)
+        adversary_create(dto, author_id=conf_account.id)
 
     assert Adversary.objects.count() == 0
     assert DamageProfile.objects.count() == 0
@@ -205,10 +201,7 @@ def test_put_adversary_minimal_default(conf_account):
     assert adv_db[0].name == "Goblin"
     assert adv_db[0].id == 1
 
-    dto = AdversaryDTO(
-        author_id=conf_account.id,
-        name="Dragon"
-    )
+    dto = AdversaryDTO(name="Dragon")
     adv_get = Adversary.objects.get(pk=1)
     adv = adversary_update(adv_get, dto)
 
@@ -237,8 +230,8 @@ def test_put_adversary_minimal_default(conf_account):
 @pytest.mark.django_db
 def test_put_adversary_minimal_reset_data_to_default(conf_account,
                                                      dummy_dto_package):
-    dto = AdversaryDTO(author_id=conf_account.id, **dummy_dto_package)
-    adversary_create(dto)
+    dto = AdversaryDTO(**dummy_dto_package)
+    adversary_create(dto, author_id=conf_account.id)
 
     adv_db = list(Adversary.objects.all())
 
@@ -246,10 +239,7 @@ def test_put_adversary_minimal_reset_data_to_default(conf_account,
     assert adv_db[0].name == "Ashen Tyrant"
     assert adv_db[0].id == 1
 
-    dto = AdversaryDTO(
-        author_id=conf_account.id,
-        name="Dragon"
-    )
+    dto = AdversaryDTO(name="Dragon")
     adv_get = Adversary.objects.get(pk=1)
     adv = adversary_update(adv_get, dto)
 
@@ -279,8 +269,8 @@ def test_put_adversary_minimal_reset_data_to_default(conf_account,
 def test_put_adversary_overwrite_nested_and_m2m(conf_account,
                                                 dummy_dto_package):
     # seed
-    seed_dto = AdversaryDTO(author_id=conf_account.id, **dummy_dto_package)
-    adv = adversary_create(seed_dto)
+    seed_dto = AdversaryDTO(**dummy_dto_package)
+    adv = adversary_create(seed_dto, author_id=conf_account.id)
 
     assert Adversary.objects.count() == 1
     assert DamageProfile.objects.count() == 1
@@ -301,7 +291,6 @@ def test_put_adversary_overwrite_nested_and_m2m(conf_account,
 
     # PUT payload
     update_dto = AdversaryDTO(
-        author_id=conf_account.id,
         name="Ashen Wyrm",
         tier=2,
         type="SOL",
@@ -411,8 +400,8 @@ def test_patch_adversary_minimal(conf_account):
 @pytest.mark.django_db
 def test_patch_forgotten_fields_are_ignored_and_none_clears(conf_account,
                                                             dummy_dto_package):
-    dto = AdversaryDTO(author_id=conf_account.id, **dummy_dto_package)
-    adv = adversary_create(dto)
+    dto = AdversaryDTO(**dummy_dto_package)
+    adv = adversary_create(dto, author_id=conf_account.id)
 
     assert adv.source == "Darrington Press"
     assert adv.tier == 1
@@ -432,8 +421,8 @@ def test_patch_forgotten_fields_are_ignored_and_none_clears(conf_account,
 
 @pytest.mark.django_db
 def test_patch_m2m_replace_ignore_and_clear(conf_account, dummy_dto_package):
-    dto = AdversaryDTO(author_id=conf_account.id, **dummy_dto_package)
-    adv = adversary_create(dto)
+    dto = AdversaryDTO(**dummy_dto_package)
+    adv = adversary_create(dto, author_id=conf_account.id)
 
     # forgotten field are untouched
     p1 = AdversaryPatchDTO(
