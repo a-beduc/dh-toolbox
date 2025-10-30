@@ -135,7 +135,7 @@ class AdversaryListOut(serializers.Serializer):
     tags = serializers.SerializerMethodField()
 
     url = serializers.HyperlinkedIdentityField(
-        view_name="adversaries:detail",
+        view_name="adversaries-detail",
         lookup_field="pk",
         lookup_url_kwarg="adversary_id"
     )

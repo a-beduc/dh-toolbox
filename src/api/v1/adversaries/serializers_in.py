@@ -66,13 +66,13 @@ class AdversaryCreateIn(serializers.Serializer):
     basic_attack = BasicAttackIn(allow_null=True, required=False)
     experiences = ExperienceIn(allow_null=True, required=False, many=True)
     tactics = serializers.ListField(
-        child=serializers.CharField(), default=list, required=False)
+        child=serializers.CharField(), required=False)
     features = FeatureIn(allow_null=True, required=False, many=True)
 
     source = serializers.CharField(allow_null=True, required=False)
     status = serializers.CharField(allow_null=True, required=False)
     tags = serializers.ListField(
-        child=serializers.CharField(), default=list, required=False)
+        child=serializers.CharField(), required=False)
 
     def validate_type(self, value):
         return normalize_choices(value, "ADV_TYPE")
