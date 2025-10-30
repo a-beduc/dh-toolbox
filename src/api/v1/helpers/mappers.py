@@ -1,5 +1,7 @@
 from adversaries.dtos.dto import DamageDTO, BasicAttackDTO, ExperienceDTO, \
     FeatureDTO, TacticDTO, TagDTO, AdversaryDTO
+from adversaries.dtos.dto_patch import AdversaryPatchDTO
+from api.v1.helpers.sentinel import present, get_or_unset
 
 
 def to_damage_dto(data):
@@ -55,9 +57,8 @@ def to_tag_dtos(data_list):
     return [TagDTO(name=data) for data in data_in]
 
 
-def to_adversary_dto(validated_data, *, author_id):
+def to_adversary_dto(validated_data):
     return AdversaryDTO(
-        author_id=author_id,
         name=validated_data["name"],
         tier=validated_data.get("tier"),
         type=validated_data.get("type"),
@@ -76,4 +77,53 @@ def to_adversary_dto(validated_data, *, author_id):
         tags=to_tag_dtos(validated_data.get("tags")),
         experiences=to_experience_dtos(validated_data.get("experiences")),
         features=to_feature_dtos(validated_data.get("features")),
+    )
+
+
+def to_adversary_patch_dto(validated_data):
+    """TODO refactoring"""
+    if present(validated_data, "basic_attack"):
+        ba = to_basic_attack_dto(validated_data.get("basic_attack"))
+    else:
+        ba = get_or_unset(validated_data, "basic_attack")
+
+    if present(validated_data, "tactics"):
+        tactics = to_tactic_dtos(validated_data.get("tactics"))
+    else:
+        tactics = get_or_unset(validated_data, "tactics")
+
+    if present(validated_data, "tags"):
+        tags = to_tag_dtos(validated_data.get("tags"))
+    else:
+        tags = get_or_unset(validated_data, "tags")
+
+    if present(validated_data, "experiences"):
+        experiences = to_experience_dtos(validated_data.get("experiences"))
+    else:
+        experiences = get_or_unset(validated_data, "experiences")
+
+    if present(validated_data, "features"):
+        features = to_feature_dtos(validated_data.get("features"))
+    else:
+        features = get_or_unset(validated_data, "features")
+
+    return AdversaryPatchDTO(
+        name=get_or_unset(validated_data, "name"),
+        tier=get_or_unset(validated_data, "tier"),
+        type=get_or_unset(validated_data, "type"),
+        description=get_or_unset(validated_data, "description"),
+        difficulty=get_or_unset(validated_data, "difficulty"),
+        threshold_major=get_or_unset(validated_data, "threshold_major"),
+        threshold_severe=get_or_unset(validated_data, "threshold_severe"),
+        hit_point=get_or_unset(validated_data, "hit_point"),
+        horde_hit_point=get_or_unset(validated_data, "horde_hit_point"),
+        stress_point=get_or_unset(validated_data, "stress_point"),
+        atk_bonus=get_or_unset(validated_data, "atk_bonus"),
+        source=get_or_unset(validated_data, "source"),
+        status=get_or_unset(validated_data, "status"),
+        basic_attack=ba,
+        tactics=tactics,
+        tags=tags,
+        experiences=experiences,
+        features=features
     )
