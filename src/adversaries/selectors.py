@@ -1,4 +1,4 @@
-from adversaries.models import Adversary
+from adversaries.models import Adversary, Experience, Tactic, Tag, Feature
 
 
 def adversary_get(pk):
@@ -27,3 +27,35 @@ def adversary_list():
         )
         .all()
     )
+
+
+def experience_get(pk):
+    return Experience.objects.get(pk=pk)
+
+
+def experience_list():
+    return Experience.objects.all()
+
+
+def tactic_get(pk):
+    return Tactic.objects.get(pk=pk)
+
+
+def tactic_list():
+    return Tactic.objects.all()
+
+
+def tag_get(pk):
+    return Tag.objects.get(pk=pk)
+
+
+def tag_list():
+    return Tag.objects.all()
+
+
+def feature_get(pk):
+    return Feature.objects.get(pk=pk)
+
+
+def feature_list():
+    return Feature.objects.all()
