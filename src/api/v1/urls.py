@@ -6,6 +6,9 @@ from api.v1.lookups.views import ExperienceCollectionApi, ExperienceItemApi, \
     TagCollectionApi, TagItemApi
 from api.v1.root import RootApi
 
+
+app_name = "v1"
+
 urlpatterns = [
     path("", RootApi.as_view(), name="api-root"),
 
