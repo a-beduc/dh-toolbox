@@ -1,0 +1,16 @@
+{% extends '_shared/base.html' %}
+{% block content %}
+    <h1>Welcome to the register page</h1>
+    <form method="post"
+          action="{% url 'accounts:register-submit' %}">
+            {% csrf_token %}
+            {{ form.as_p }}
+        <button role="button" type="submit">
+            Register
+        </button>
+    </form>
+    <button role="button"
+            onclick="location.href='{% url 'accounts:login' %}'">
+        Back
+    </button>
+{% endblock content %}
